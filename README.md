@@ -56,9 +56,7 @@ jobs:
 
       - name: Set Environment Variables
         if: steps.changed-files.outputs.any_changed == 'true'
-        run: |
-          echo "MERGED_FILE=$(realpath ${{ steps.changed-files.outputs.all_changed_files }})" >> $GITHUB_ENV
-          echo "SOP_ID=2351" >> $GITHUB_ENV  # Customize as needed
+        run: echo "MERGED_FILE=$(realpath ${{ steps.changed-files.outputs.all_changed_files }})" >> $GITHUB_ENV
 
       - name: Upload Excel File to Qualer
         if: steps.changed-files.outputs.any_changed == 'true'
@@ -66,7 +64,7 @@ jobs:
         env:
           QUALER_EMAIL: ${{ secrets.QUALER_EMAIL }}
           QUALER_PASSWORD: ${{ secrets.QUALER_PASSWORD }}
-          SOP_ID: $SOP_ID
+          SOP_ID: 2351  # Replace per repository
 ```
 
 ### 2️⃣ **Store GitHub Secrets**
