@@ -45,26 +45,33 @@ jobs:
       - name: Checkout shared CI scripts
         uses: actions/checkout@v3
         with:
-          repository: Johnson-Gage-Inspection-Inc/ci-scripts
+          repository: your-org/ci-scripts
           path: ci-scripts  # Store in a subfolder
 
-      - name: Locate Changed Excel Files
-        id: changed-files
+      - name: Locate Changed Excel File
+        id: changed-file
         uses: tj-actions/changed-files@v35
         with:
           files: '**/*.xlsm'
 
-      - name: Set Environment Variables
-        if: steps.changed-files.outputs.any_changed == 'true'
-        run: echo "MERGED_FILE=$(realpath ${{ steps.changed-files.outputs.all_changed_files }})" >> $GITHUB_ENV
+      - name: Ensure Only One File is Changed
+        if: steps.changed-file.outputs.any_changed == 'true'
+        run: |
+          FILE_COUNT=$(echo "${{ steps.changed-file.outputs.all_changed_files }}" | wc -w)
+          if [ "$FILE_COUNT" -ne 1 ]; then
+            echo "❌ Error: More than one Excel file was changed. Only one file is allowed per PR."
+            exit 1
+          fi
+          echo "MERGED_FILE=${{ steps.changed-file.outputs.all_changed_files }}" >> $GITHUB_ENV
 
       - name: Upload Excel File to Qualer
-        if: steps.changed-files.outputs.any_changed == 'true'
+        if: steps.changed-file.outputs.any_changed == 'true'
         run: ./ci-scripts/upload_sop.sh
         env:
           QUALER_EMAIL: ${{ secrets.QUALER_EMAIL }}
           QUALER_PASSWORD: ${{ secrets.QUALER_PASSWORD }}
           SOP_ID: 2351  # Replace per repository
+          MERGED_FILE: ${{ env.MERGED_FILE }}
 ```
 
 ### 2️⃣ **Store GitHub Secrets**
