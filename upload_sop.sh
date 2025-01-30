@@ -140,7 +140,7 @@ if [[ $status_code -ne 200 ]]; then
     exit 5
 fi
 
-if grep -q '<h2>Object moved to <a href="/login?returnUrl=' upload_response.html; then
+if grep -q '<h2>Object moved to <a href="/login?returnUrl=' upload_response.json; then
     echo "Failed to upload SOP file."
     exit 6
 fi
