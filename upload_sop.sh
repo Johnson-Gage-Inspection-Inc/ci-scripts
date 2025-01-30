@@ -87,7 +87,7 @@ if [[ ! -f "$NEW_FILE_PATH" ]]; then
 fi
 
 # Step 4: Update the CSRF token by making a request to the SOP page
-status_code=$(curl -s -w "%{http_code}" 'https://jgiquality.qualer.com/Sop/Sop?sopId=2351' \
+status_code=$(curl -s -w "%{http_code}" "https://jgiquality.qualer.com/Sop/Sop?sopId=$SOP_ID" \
     -X GET \
     -b cookies.txt -c cookies.txt \
     -H 'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:134.0) Gecko/20100101 Firefox/134.0' \
@@ -130,9 +130,9 @@ status_code=$(curl -s -w "%{http_code}" -o upload_response.json "https://jgiqual
     -H "Accept: application/json, text/javascript, */*; q=0.01" \
     -H "X-Requested-With: XMLHttpRequest" \
     -H "Content-Type: multipart/form-data" \
-    -H "Referer: https://jgiquality.qualer.com/Sop/Sop?sopId=2351" \
+    -H "Referer: https://jgiquality.qualer.com/Sop/Sop?sopId=$SOP_ID" \
     -F "Documents=@$NEW_FILE_PATH" \
-    -F "sopId=2351" \
+    -F "sopId=$SOP_ID" \
     -F "__RequestVerificationToken=$csrf_token_value")
 
 if [[ $status_code -ne 200 ]]; then
