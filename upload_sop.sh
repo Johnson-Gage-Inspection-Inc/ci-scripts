@@ -8,10 +8,6 @@ else
     exit 0
 fi
 
-# Debug: Print loaded credentials (REMOVE AFTER DEBUGGING)
-echo "Using Email: $QUALER_EMAIL"
-echo "Using Password: [HIDDEN]"
-
 # Step 1: Get the login page to set cookies
 curl -s -c cookies.txt 'https://jgiquality.qualer.com/login' -o /dev/null
 
@@ -45,7 +41,7 @@ status_code=$(curl -s -o login_response.html -w "%{http_code}" 'https://jgiquali
     -H 'Sec-Fetch-Site: same-origin' \
     -H 'Sec-Fetch-User: ?1' \
     -H 'Priority: u=0, i' \
-    --data-raw "Email=jhall%40jgiquality.com&Password=PoorGary1%21&$csrf_token_name=$csrf_token_value")
+    --data-raw "Email=$QUALER_EMAIL&Password=$QUALER_PASSWORD&$csrf_token_name=$csrf_token_value")
 
 if [[ $status_code -ne 302 ]]; then
   echo "Authentication failed with status code $status_code"
