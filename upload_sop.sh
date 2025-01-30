@@ -8,6 +8,17 @@ else
     exit 0
 fi
 
+# Ensure the necessary environment variables are set
+if [[ -z "$MERGED_FILE" ]]; then
+    echo "MERGED_FILE environment variable is not set. Exiting..."
+    exit 1
+fi
+
+if [[ -z "$SOP_ID" ]]; then
+    echo "SOP_ID environment variable is not set. Exiting..."
+    exit 1
+fi
+
 # Step 1: Get the login page to set cookies
 curl -s -c cookies.txt 'https://jgiquality.qualer.com/login' -o /dev/null
 
