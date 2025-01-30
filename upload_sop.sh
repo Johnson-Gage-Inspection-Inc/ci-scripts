@@ -69,7 +69,7 @@ else
 fi
 
 # Define file path and append today's date to the filename
-FILE_PATH="$(realpath "../pth/Form_3018_Rockwell_12-19-2024.xlsm")"
+FILE_PATH="$MERGED_FILE"
 FILE_DIR=$(dirname "$FILE_PATH")
 FILE_NAME=$(basename "$FILE_PATH")
 FILE_BASE="${FILE_NAME%.*}"
