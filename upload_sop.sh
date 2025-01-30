@@ -57,12 +57,21 @@ else
   echo "Unexpected response after login."
 fi
 
-# Define file path
+# Define file path and append today's date to the filename
 FILE_PATH="$(realpath "../pth/Form_3018_Rockwell_12-19-2024.xlsm")"
-echo "File : $FILE_PATH"
+FILE_DIR=$(dirname "$FILE_PATH")
+FILE_NAME=$(basename "$FILE_PATH")
+FILE_BASE="${FILE_NAME%.*}"
+FILE_EXT="${FILE_NAME##*.}"
+TODAY=$(date +%Y-%m-%d)
+NEW_FILE_NAME="${FILE_BASE}_${TODAY}.${FILE_EXT}"
+NEW_FILE_PATH="${FILE_DIR}/${NEW_FILE_NAME}"
+mv "$FILE_PATH" "$NEW_FILE_PATH"
+echo "File : $NEW_FILE_PATH"
+
 # Ensure the file exists before proceeding
-if [[ ! -f "$FILE_PATH" ]]; then
-  echo "File not found: $FILE_PATH"
+if [[ ! -f "$NEW_FILE_PATH" ]]; then
+  echo "File not found: $NEW_FILE_PATH"
   exit 3
 fi
 
@@ -102,6 +111,7 @@ fi
 csrf_token_name=$(awk '$6 ~ /^__RequestVerificationToken_/ {print $6}' cookies.txt | head -1)
 csrf_token_value=$(grep -oP '(?<=<input name="__RequestVerificationToken" type="hidden" value=")[^"]*' sop_page.html)
 
+
 status_code=$(curl -s -w "%{http_code}" -o upload_response.json "https://jgiquality.qualer.com/Sop/SaveSopFile" \
     -X POST \
     -b cookies.txt -c cookies.txt \
@@ -110,7 +120,7 @@ status_code=$(curl -s -w "%{http_code}" -o upload_response.json "https://jgiqual
     -H "X-Requested-With: XMLHttpRequest" \
     -H "Content-Type: multipart/form-data" \
     -H "Referer: https://jgiquality.qualer.com/Sop/Sop?sopId=2351" \
-    -F "Documents=@$FILE_PATH" \
+    -F "Documents=@$NEW_FILE_PATH" \
     -F "sopId=2351" \
     -F "__RequestVerificationToken=$csrf_token_value")
 
