@@ -122,7 +122,6 @@ fi
 csrf_token_name=$(awk '$6 ~ /^__RequestVerificationToken_/ {print $6}' cookies.txt | head -1)
 csrf_token_value=$(grep -oP '(?<=<input name="__RequestVerificationToken" type="hidden" value=")[^"]*' sop_page.html)
 
-
 status_code=$(curl -s -w "%{http_code}" -o upload_response.json "https://jgiquality.qualer.com/Sop/SaveSopFile" \
     -X POST \
     -b cookies.txt -c cookies.txt \
@@ -147,9 +146,12 @@ fi
 
 echo "SOP file uploaded successfully"
 
-success=$(jq -r '.Success' upload_response.json)
+success=$(grep -o '"Success":true' upload_response.json)
 
-if [[ "$success" == "true" ]]; then
+# Print the result
+echo "Upload response: $success"
+
+if [[ "$success" == "\"Success\":true" ]]; then
     echo "Upload succeeded"
 else
     echo "Upload failed"
