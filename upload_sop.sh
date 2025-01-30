@@ -3,10 +3,8 @@
 # Load environment variables from .env file
 if [[ -f .env ]]; then
     export $(grep -v '^#' .env | xargs)
-else
-    echo "Missing .env file. Exiting..."
-    exit 0
 fi
+
 
 # Ensure the necessary environment variables are set
 if [[ -z "$MERGED_FILE" ]]; then
