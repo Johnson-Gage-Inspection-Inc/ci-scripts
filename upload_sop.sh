@@ -1,5 +1,5 @@
 #!/bin/bash
-# set -e  # Exit on first error
+set -e  # Exit on first error
 
 # Run shared authentication & file preparation
 source "$(dirname "$0")/auth_and_prepare.sh"
@@ -52,6 +52,7 @@ fi
 
 status_code=$(curl 'https://jgiquality.qualer.com/Sop/Sop' \
   -X POST -b cookies.txt -c cookies.txt \
+  -o update_response.json \
   -H 'accept: */*' \
   -H 'accept-language: en-US,en;q=0.9' \
   -H 'cache-control: no-cache, must-revalidate' \
@@ -71,9 +72,18 @@ status_code=$(curl 'https://jgiquality.qualer.com/Sop/Sop' \
   -H 'x-requested-with: XMLHttpRequest' \
   --data-raw "SopId=$SOP_ID&SopTypeId=1544&AttachmentName=$NEW_FILE_PATH&SopTypeName=Approved+Software&title=$DOC_TITLE&code=Form+3018&EffectiveDate=$current_date&revision=$COMMIT_HASH&author=$AUTHOR_NAME&details=$DOC_DETAILS&__RequestVerificationToken=$csrf_token_value")
 
-if [[ $status_code -ne 200 ]]; then
+cat update_response.json
+echo \
+
+success=$(grep -o '"Success":true' update_response.json)
+
+# Print the result
+cat upload_response.json
+echo \
+
+if [[ "$success" == "\"Success\":true" ]]; then
+  echo "✅ SOP file updated successfully!"
+else
   echo "❌ Failed to update the SOP with status code $status_code"
   exit 4
 fi
-
-echo "✅ SOP updated successfully!"

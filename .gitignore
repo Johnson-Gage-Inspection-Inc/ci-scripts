@@ -2,4 +2,5 @@ cookies.txt
 login_response.html
 sop_page.html
 upload_response.json
+update_response.json
 .env
