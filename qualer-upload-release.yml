@@ -1,0 +1,71 @@
+name: Upload & Release on Merge
+
+on:
+  workflow_call:
+    inputs:
+      repo_name:
+        required: true
+        type: string
+      branch:
+        required: false
+        type: string
+        default: "main"
+
+jobs:
+  upload:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate Secrets
+        run: |
+          if [[ -z "${{ secrets.QUALER_EMAIL }}" || -z "${{ secrets.QUALER_PASSWORD }}" ]]; then
+            echo "❌ Missing required secrets."
+            exit 1
+          fi
+
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+        with:
+          repository: ${{ inputs.repo_name }}
+          path: repo
+          fetch-depth: 0
+
+      - name: Check for Excel File Changes
+        id: check
+        run: |
+          cd repo
+          if git diff --quiet HEAD^ HEAD -- '*.xlsm'; then
+            echo "✅ No Excel files changed. Skipping upload."
+            echo "skip=true" >> $GITHUB_ENV
+            exit 0
+          fi
+
+      - name: Ensure Only One File is Changed
+        if: env.skip != 'true'
+        run: |
+          cd repo
+          FILE_COUNT=$(git diff --name-only HEAD^ HEAD -- '*.xlsm' | wc -l)
+          if [ "$FILE_COUNT" -ne 1 ]; then
+            echo "❌ More than one Excel file changed. Aborting upload."
+            exit 1
+          fi
+          FILE_PATH=$(git diff --name-only HEAD^ HEAD -- '*.xlsm')
+          echo "MERGED_FILE=$FILE_PATH" >> $GITHUB_ENV
+
+      - name: Checkout `ci-scripts` Repository
+        uses: actions/checkout@v3
+        with:
+          repository: Johnson-Gage-Inspection-Inc/ci-scripts
+          path: ci-scripts
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Ensure `upload_sop.sh` is Executable
+        if: env.skip != 'true'
+        run: chmod +x ./ci-scripts/upload_sop.sh
+
+      - name: Run Upload Script
+        if: env.skip != 'true'
+        run: ./ci-scripts/upload_sop.sh
+        env:
+          QUALER_EMAIL: ${{ secrets.QUALER_EMAIL }}
+          QUALER_PASSWORD: ${{ secrets.QUALER_PASSWORD }}
+          MERGED_FILE: ${{ env.MERGED_FILE }}

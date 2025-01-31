@@ -1,0 +1,82 @@
+name: Qualer Pre-Merge Validation
+
+on:
+  workflow_call:
+    inputs:
+      repo_name:
+        required: true
+        type: string
+      branch:
+        required: false
+        type: string
+        default: "main"
+
+jobs:
+  validate-upload:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate Secrets
+        run: |
+          if [[ -z "${{ secrets.QUALER_EMAIL }}" || -z "${{ secrets.QUALER_PASSWORD }}" ]]; then
+            echo "❌ Missing required secrets."
+            exit 1
+          fi
+
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+        with:
+          repository: ${{ inputs.repo_name }}
+          path: repo
+          fetch-depth: 0
+
+      - name: Ensure Repository is Cloned
+        run: |
+          if [ ! -d "repo" ]; then
+            echo "❌ Error: Repository not found!"
+            exit 1
+          fi
+
+      - name: Fetch All Branches (Ensure origin/main Exists)
+        run: |
+          cd repo
+          git fetch --prune --unshallow || git fetch --prune
+
+      - name: Check for Excel file changes
+        id: check
+        run: |
+          cd repo
+          if git diff --quiet origin/${{ inputs.branch }} HEAD -- '*.xlsm'; then
+            echo "✅ No Excel files changed. Skipping validation."
+            echo "skip=true" >> $GITHUB_ENV
+            exit 0
+          fi
+
+      - name: Ensure Only One Excel File is Changed
+        if: env.skip != 'true'
+        run: |
+          cd repo
+          FILE_COUNT=$(git diff --name-only origin/${{ inputs.branch }} HEAD -- '*.xlsm' | wc -l)
+          if [ "$FILE_COUNT" -ne 1 ]; then
+            echo "❌ More than one Excel file changed. PR must contain only one Excel update."
+            exit 1
+          fi
+          FILE_PATH=$(git diff --name-only origin/${{ inputs.branch }} HEAD -- '*.xlsm')
+          echo "MERGED_FILE=$FILE_PATH" >> $GITHUB_ENV
+
+      - name: Checkout `ci-scripts` Repository
+        uses: actions/checkout@v3
+        with:
+          repository: Johnson-Gage-Inspection-Inc/ci-scripts
+          path: ci-scripts
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Ensure `validate_upload.sh` is Executable
+        run: chmod +x ./ci-scripts/validate_upload.sh
+
+      - name: Run Upload Validation
+        if: env.skip != 'true'
+        run: ./ci-scripts/validate_upload.sh
+        env:
+          QUALER_EMAIL: ${{ secrets.QUALER_EMAIL }}
+          QUALER_PASSWORD: ${{ secrets.QUALER_PASSWORD }}
+          MERGED_FILE: ${{ env.MERGED_FILE }}

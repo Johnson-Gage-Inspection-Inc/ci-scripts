@@ -33,7 +33,7 @@ echo "✅ Extracted CSRF Token Name: $csrf_token_name"
 echo "✅ Extracted CSRF Token Value: $csrf_token_value"
 
 # Step 3: Authenticate
-status_code=$(curl -s -o login_response.html -w "%{http_code}" \
+status_code=$(curl -s -o tmp/login_response.html -w "%{http_code}" \
     'https://jgiquality.qualer.com/login?returnUrl=%2FSop%2FSops_Read' \
     -b cookies.txt -c cookies.txt -X POST \
     -H 'Content-Type: application/x-www-form-urlencoded' \
@@ -47,7 +47,7 @@ fi
 echo "✅ Authentication succeeded (status: $status_code)"
 
 # Verify redirect
-if ! grep -q '<h2>Object moved to <a href="/Sop/Sops_Read">here</a>.</h2>' login_response.html; then
+if ! grep -q '<h2>Object moved to <a href="/Sop/Sops_Read">here</a>.</h2>' tmp/login_response.html; then
   echo "❌ Unexpected response after login."
   exit 5
 fi
@@ -74,7 +74,7 @@ mv "$FILE_PATH" "$NEW_FILE_PATH" || exit 7
 echo "✅ File renamed to: $NEW_FILE_PATH"
 
 # Step 4: Update the CSRF token by making a request to the SOP page
-status_code=$(curl -s -w "%{http_code}" -o sop_page.html \
+status_code=$(curl -s -w "%{http_code}" -o tmp/sop_page.html \
     "https://jgiquality.qualer.com/Sop/Sop?sopId=$SOP_ID" \
     -X GET -b cookies.txt -c cookies.txt \
     -H 'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:134.0) Gecko/20100101 Firefox/134.0' \
@@ -87,11 +87,11 @@ if [[ $status_code -ne 200 ]]; then
 fi
 
 # Step 5: Verify the response
-if grep -q '<h2>Object moved to <a href="/login?returnUrl=' sop_page.html; then
+if grep -q '<h2>Object moved to <a href="/login?returnUrl=' tmp/sop_page.html; then
     echo "Unexpected response after updating CSRF token."
 else
     # Extract CSRF token for file upload
-    csrf_token_value=$(grep -oP '(?<=<input name="__RequestVerificationToken" type="hidden" value=")[^"]*' sop_page.html)
+    csrf_token_value=$(grep -oP '(?<=<input name="__RequestVerificationToken" type="hidden" value=")[^"]*' tmp/sop_page.html)
     echo "✅ CSRF token updated successfully (status: $status_code)"
 fi
 

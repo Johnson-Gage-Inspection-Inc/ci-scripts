@@ -28,7 +28,7 @@ echo "Extracted CSRF Token Name: $csrf_token_name"
 echo "Extracted CSRF Token Value: $csrf_token_value"
 
 # Second request to authenticate
-status_code=$(curl -s -o login_response.html -w "%{http_code}" 'https://jgiquality.qualer.com/login?returnUrl=%2FSop%2FSops_Read' \
+status_code=$(curl -s -o tmp/login_response.html -w "%{http_code}" 'https://jgiquality.qualer.com/login?returnUrl=%2FSop%2FSops_Read' \
     -b cookies.txt -c cookies.txt \
     -X POST \
     -H 'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:134.0) Gecko/20100101 Firefox/134.0' \
@@ -86,7 +86,7 @@ status_code=$(curl -s -w "%{http_code}" 'https://jgiquality.qualer.com/Sop/Sop?s
     -H 'Sec-Fetch-Site: same-origin' \
     -H 'Sec-Fetch-User: ?1' \
     -H 'TE: trailers' \
-    -o sop_page.html)
+    -o tmp/sop_page.html)
 
 if [[ $status_code -ne 200 ]]; then
     echo "Failed to update CSRF token with status code $status_code"
@@ -106,7 +106,7 @@ fi
 csrf_token_name=$(awk '$6 ~ /^__RequestVerificationToken_/ {print $6}' cookies.txt | head -1)
 csrf_token_value=$(grep -oP '(?<=<input name="__RequestVerificationToken" type="hidden" value=")[^"]*' sop_page.html)
 
-status_code=$(curl -s -w "%{http_code}" -o upload_response.json "https://jgiquality.qualer.com/Sop/SaveSopFile" \
+status_code=$(curl -s -w "%{http_code}" -o tmp/upload_response.json "https://jgiquality.qualer.com/Sop/SaveSopFile" \
     -X POST \
     -b cookies.txt -c cookies.txt \
     -H "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:134.0) Gecko/20100101 Firefox/134.0" \
@@ -132,7 +132,7 @@ if grep -q '<h2>Object moved to <a href="/login?returnUrl=' upload_response.json
   exit 2
 fi
 
-success=$(grep -o '"Success":true' upload_response.json)
+success=$(grep -o '"Success":true' tmp/upload_response.json)
 
 # Print the result
 cat upload_response.json
