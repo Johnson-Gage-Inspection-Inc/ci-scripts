@@ -2,30 +2,20 @@
 set -e  # Exit on first error
 
 # Load environment variables
-if [[ -f .env ]]; then
-    export $(grep -v '^#' .env | xargs)
-fi
+set -o allexport
+source .env
+set +o allexport
+
 
 # Ensure necessary environment variables are set
-if [[ -z "$MERGED_FILE" ]]; then
-    echo "❌ MERGED_FILE environment variable is not set. Exiting..."
-    exit 1
-fi
+required_vars=("MERGED_FILE" "SOP_ID" "AUTHOR_NAME" "COMMIT_HASH" "DOC_ID" "DOC_TITLE" "DOC_DETAILS")
 
-if [[ -z "$SOP_ID" ]]; then
-    echo "❌ SOP_ID environment variable is not set. Exiting..."
-    exit 1
-fi
-
-if [[ -z "$AUTHOR_NAME" ]]; then
-    echo "❌ AUTHOR_NAME environment variable is not set. Exiting..."
-    exit 1
-fi
-
-if [[ -z "$COMMIT_HASH" ]]; then
-    echo "❌ COMMIT_HASH environment variable is not set. Exiting..."
-    exit 1
-fi
+for var in "${required_vars[@]}"; do
+    if [[ -z "${!var}" ]]; then
+        echo "❌ $var environment variable is not set. Exiting..."
+        exit 1
+    fi
+done
 
 # Step 1: Get the login page to set cookies
 curl -s -c cookies.txt 'https://jgiquality.qualer.com/login' -o /dev/null || exit 2
@@ -96,10 +86,14 @@ if [[ $status_code -ne 200 ]]; then
     exit 8
 fi
 
-echo "✅ CSRF token updated successfully (status: $status_code)"
-
-# Extract CSRF token for file upload
-csrf_token_value=$(awk '$6 ~ /^__RequestVerificationToken_/ {print $NF}' cookies.txt)
+# Step 5: Verify the response
+if grep -q '<h2>Object moved to <a href="/login?returnUrl=' sop_page.html; then
+    echo "Unexpected response after updating CSRF token."
+else
+    # Extract CSRF token for file upload
+    csrf_token_value=$(grep -oP '(?<=<input name="__RequestVerificationToken" type="hidden" value=")[^"]*' sop_page.html)
+    echo "✅ CSRF token updated successfully (status: $status_code)"
+fi
 
 if [[ -z "$csrf_token_value" ]]; then
   echo "❌ Error: Failed to extract CSRF token for file upload."
