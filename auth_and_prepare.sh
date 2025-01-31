@@ -17,6 +17,16 @@ if [[ -z "$SOP_ID" ]]; then
     exit 1
 fi
 
+if [[ -z "$AUTHOR_NAME" ]]; then
+    echo "❌ AUTHOR_NAME environment variable is not set. Exiting..."
+    exit 1
+fi
+
+if [[ -z "$COMMIT_HASH" ]]; then
+    echo "❌ COMMIT_HASH environment variable is not set. Exiting..."
+    exit 1
+fi
+
 # Step 1: Get the login page to set cookies
 curl -s -c cookies.txt 'https://jgiquality.qualer.com/login' -o /dev/null || exit 2
 
