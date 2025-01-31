@@ -18,11 +18,11 @@ for var in "${required_vars[@]}"; do
 done
 
 # Step 1: Get the login page to set cookies
-curl -s -c cookies.txt 'https://jgiquality.qualer.com/login' -o /dev/null || exit 2
+curl -s -c tmp/cookies.txt 'https://jgiquality.qualer.com/login' -o /dev/null || exit 2
 
 # Step 2: Extract CSRF token
-csrf_token_name=$(awk '$6 ~ /^__RequestVerificationToken_/ {print $6}' cookies.txt | head -1)
-csrf_token_value=$(awk -v token="$csrf_token_name" '$6 == token {print $NF}' cookies.txt)
+csrf_token_name=$(awk '$6 ~ /^__RequestVerificationToken_/ {print $6}' tmp/cookies.txt | head -1)
+csrf_token_value=$(awk -v token="$csrf_token_name" '$6 == token {print $NF}' tmp/cookies.txt)
 
 if [[ -z "$csrf_token_name" || -z "$csrf_token_value" ]]; then
   echo "❌ Failed to extract CSRF token from cookies."
@@ -35,7 +35,7 @@ echo "✅ Extracted CSRF Token Value: $csrf_token_value"
 # Step 3: Authenticate
 status_code=$(curl -s -o tmp/login_response.html -w "%{http_code}" \
     'https://jgiquality.qualer.com/login?returnUrl=%2FSop%2FSops_Read' \
-    -b cookies.txt -c cookies.txt -X POST \
+    -b tmp/cookies.txt -c tmp/cookies.txt -X POST \
     -H 'Content-Type: application/x-www-form-urlencoded' \
     --data-raw "Email=$QUALER_EMAIL&Password=$QUALER_PASSWORD&$csrf_token_name=$csrf_token_value")
 
@@ -62,21 +62,10 @@ if [[ ! -f "$FILE_PATH" ]]; then
   exit 6
 fi
 
-FILE_DIR=$(dirname "$FILE_PATH")
-FILE_NAME=$(basename "$FILE_PATH")
-FILE_BASE="${FILE_NAME%.*}"
-FILE_EXT="${FILE_NAME##*.}"
-TODAY=$(date +%Y-%m-%d)
-NEW_FILE_NAME="${FILE_BASE}_${TODAY}.${FILE_EXT}"
-NEW_FILE_PATH="${FILE_DIR}/${NEW_FILE_NAME}"
-
-mv "$FILE_PATH" "$NEW_FILE_PATH" || exit 7
-echo "✅ File renamed to: $NEW_FILE_PATH"
-
 # Step 4: Update the CSRF token by making a request to the SOP page
 status_code=$(curl -s -w "%{http_code}" -o tmp/sop_page.html \
     "https://jgiquality.qualer.com/Sop/Sop?sopId=$SOP_ID" \
-    -X GET -b cookies.txt -c cookies.txt \
+    -X GET -b tmp/cookies.txt -c tmp/cookies.txt \
     -H 'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:134.0) Gecko/20100101 Firefox/134.0' \
     -H 'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8' \
     -H 'Connection: keep-alive')
@@ -101,5 +90,4 @@ if [[ -z "$csrf_token_value" ]]; then
 fi
 
 # Export variables for the upload script
-export NEW_FILE_PATH
 export csrf_token_value
