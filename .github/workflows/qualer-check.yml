@@ -10,6 +10,11 @@ on:
         required: false
         type: string
         default: "main"
+    secrets:
+      QUALER_EMAIL:
+        required: true
+      QUALER_PASSWORD:
+        required: true
 
 jobs:
   validate-upload:
@@ -73,6 +78,13 @@ jobs:
       - name: Ensure `validate_upload.sh` is Executable
         run: chmod +x ./ci-scripts/validate_upload.sh
 
+      - name: Get Commit Hash
+        if: env.skip != 'true'
+        run: |
+          cd repo
+          COMMIT_HASH=$(git rev-parse HEAD)
+          echo "COMMIT_HASH=$COMMIT_HASH" >> $GITHUB_ENV
+
       - name: Run Upload Validation
         if: env.skip != 'true'
         run: ./ci-scripts/validate_upload.sh
@@ -80,3 +92,4 @@ jobs:
           QUALER_EMAIL: ${{ secrets.QUALER_EMAIL }}
           QUALER_PASSWORD: ${{ secrets.QUALER_PASSWORD }}
           MERGED_FILE: ${{ env.MERGED_FILE }}
+          COMMIT_HASH: ${{ env.COMMIT_HASH }}
