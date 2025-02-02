@@ -86,7 +86,7 @@ jobs:
           git diff --name-status origin/${{ inputs.branch }} HEAD | grep -E '\.xl' > changed_files.txt || true
           cat changed_files.txt  # Debugging step to print the file contents
 
-      - name: Handle Excel file count
+      - name: Handle Excel file count and changes
         run: |
             if [ "$EXCEL_COUNT" -eq 0 ]; then
               if grep -qE '^D' changed_files.txt; then
@@ -97,21 +97,18 @@ jobs:
                 exit 0
               fi
             elif [ "$EXCEL_COUNT" -eq 1 ]; then
-              EXCEL_FILE=$(find . -type f -iname "*.xls*" | head -n 1)
-              echo "✅ Using Excel file: $EXCEL_FILE"
-              echo "EXCEL_FILE=$EXCEL_FILE" >> $GITHUB_ENV
+              if ! [ -s changed_files.txt ]; then
+                echo "✅ No Excel files changed. Skipping validation."
+                exit 0
+              else
+                EXCEL_FILE=$(find . -type f -iname "*.xls*" | head -n 1)
+                echo "✅ Using Excel file: $EXCEL_FILE"
+                echo "EXCEL_FILE=$EXCEL_FILE" >> $GITHUB_ENV
+              fi
             else
               echo "❌ More than one Excel file found! Exiting with error."
               exit 1
             fi
-
-      - name: Check if Any Excel Files Were Changed
-        id: check
-        run: |
-          if ! [ -s changed_files.txt ]; then
-            echo "✅ No Excel files changed. Skipping validation."
-            exit 0
-          fi
 
       - name: Checkout `ci-scripts` Repository
         uses: actions/checkout@v3
