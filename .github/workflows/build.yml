@@ -26,3 +26,10 @@ jobs:
 
       - name: Display environment variables (for debugging)
         run: env | sort
+
+      - name: Validate environment variables (SOP_ID, DOC_ID, DOC_TITLE, DOC_DETAILS)
+        run: |
+          if [[ -z "${{ env.SOP_ID }}" || -z "${{ env.DOC_ID }}" || -z "${{ env.DOC_TITLE }}" || -z "${{ env.DOC_DETAILS }}" ]]; then
+            echo "❌ Missing required environment variables."
+            exit 1
+          fi
