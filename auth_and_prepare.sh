@@ -8,7 +8,7 @@ set +o allexport
 
 
 # Ensure necessary environment variables are set
-required_vars=("MERGED_FILE" "SOP_ID" "AUTHOR_NAME" "COMMIT_HASH" "DOC_ID" "DOC_TITLE" "DOC_DETAILS")
+required_vars=("EXCEL_FILE" "SOP_ID" "AUTHOR_NAME" "COMMIT_HASH" "DOC_ID" "DOC_TITLE" "DOC_DETAILS")
 
 for var in "${required_vars[@]}"; do
     if [[ -z "${!var}" ]]; then
@@ -54,11 +54,8 @@ fi
 
 echo "✅ Login success confirmed."
 
-# Step 4: Rename file with date suffix
-FILE_PATH="$MERGED_FILE"
-
-if [[ ! -f "$FILE_PATH" ]]; then
-  echo "❌ Error: File not found: $FILE_PATH"
+if [[ ! -f "$EXCEL_FILE" ]]; then
+  echo "❌ Error: File not found: $EXCEL_FILE"
   exit 6
 fi
 

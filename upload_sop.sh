@@ -11,36 +11,37 @@ current_date=$(date +"%m/%d/%Y")
 
 echo "✅ Current date: $current_date"
 
-# Ensure FILE_PATH is set
-if [ -z "$FILE_PATH" ]; then
-  echo "❌ FILE_PATH is not set. Exiting."
+# Ensure EXCEL_FILE is set
+if [ -z "$EXCEL_FILE" ]; then
+  echo "❌ EXCEL_FILE is not set. Exiting."
   exit 1
 fi
 
 # Ensure there's a file there
-if [ ! -f "$FILE_PATH" ]; then
-  echo "❌ File not found: $FILE_PATH"
+if [ ! -f "$EXCEL_FILE" ]; then
+  echo "❌ File not found: $EXCEL_FILE"
   exit 1
 fi
 
-FILE_DIR=$(dirname "$FILE_PATH")
-FILE_NAME=$(basename "$FILE_PATH")
+# Step 4: Rename file with date suffix
+FILE_DIR=$(dirname "$EXCEL_FILE")
+FILE_NAME=$(basename "$EXCEL_FILE")
 FILE_BASE="${FILE_NAME%.*}"
 FILE_EXT="${FILE_NAME##*.}"
 TODAY=$(date +%Y-%m-%d)
 NEW_FILE_NAME="${FILE_BASE}_${TODAY}.${FILE_EXT}"
-NEW_FILE_PATH="${FILE_DIR}/${NEW_FILE_NAME}"
+NEW_EXCEL_FILE="${FILE_DIR}/${NEW_FILE_NAME}"
 
-mv "$FILE_PATH" "$NEW_FILE_PATH" || exit 7
-echo "✅ File renamed to: $NEW_FILE_PATH"
+mv "$EXCEL_FILE" "$NEW_EXCEL_FILE" || exit 7
+echo "✅ File renamed to: $NEW_EXCEL_FILE"
 
 # Ensure there's a file there
-if [ ! -f "$NEW_FILE_PATH" ]; then
-  echo "❌ File not found: $NEW_FILE_PATH"
+if [ ! -f "$NEW_EXCEL_FILE" ]; then
+  echo "❌ File not found: $NEW_EXCEL_FILE"
   exit 1
 fi
 
-echo "ℹ️ Uploading file: $NEW_FILE_PATH"
+echo "ℹ️ Uploading file: $NEW_EXCEL_FILE"
 
 status_code=$(curl -s -w "%{http_code}" -o tmp/upload_response.json "https://jgiquality.qualer.com/Sop/SaveSopFile" \
     -X POST \
@@ -49,7 +50,7 @@ status_code=$(curl -s -w "%{http_code}" -o tmp/upload_response.json "https://jgi
     -H "Accept: */*" \
     -H "X-Requested-With: XMLHttpRequest" \
     -H "Referer: https://jgiquality.qualer.com/Sop/Sop?sopId=$SOP_ID" \
-    -F "documents=@$NEW_FILE_PATH;type=application/vnd.ms-excel.sheet.macroEnabled.12" \
+    -F "documents=@$NEW_EXCEL_FILE;type=application/vnd.ms-excel.sheet.macroEnabled.12" \
     -F "sopId=$SOP_ID" \
     -F "__RequestVerificationToken=$csrf_token_value")
 
@@ -100,7 +101,7 @@ status_code=$(curl 'https://jgiquality.qualer.com/Sop/Sop' \
   -H 'sec-fetch-site: same-origin' \
   -H 'user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/132.0.0.0 Safari/537.36 Edg/132.0.0.0' \
   -H 'x-requested-with: XMLHttpRequest' \
-  --data-raw "SopId=$SOP_ID&SopTypeId=1544&AttachmentName=$NEW_FILE_PATH&SopTypeName=Approved+Software&title=$DOC_TITLE&code=$DOC_ID&EffectiveDate=$current_date&revision=$COMMIT_HASH&author=$AUTHOR_NAME&details=$DOC_DETAILS&__RequestVerificationToken=$csrf_token_value")
+  --data-raw "SopId=$SOP_ID&SopTypeId=1544&AttachmentName=$NEW_EXCEL_FILE&SopTypeName=Approved+Software&title=$DOC_TITLE&code=$DOC_ID&EffectiveDate=$current_date&revision=$COMMIT_HASH&author=$AUTHOR_NAME&details=$DOC_DETAILS&__RequestVerificationToken=$csrf_token_value")
 
 cat tmp/update_response.json
 echo \
