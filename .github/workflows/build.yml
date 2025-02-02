@@ -28,6 +28,9 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Get Short Commit Hash
+        run: echo "COMMIT_HASH=$(echo $GITHUB_SHA | cut -c1-8)" >> $GITHUB_ENV
+  
       - name: Load environment variables
         run: |
           if [ -f "${{ inputs.ENV_FILE_PATH }}" ]; then
@@ -88,9 +91,6 @@ jobs:
               echo "❌ More than one Excel file found! Exiting with error."
               exit 1
             fi
-
-      - name: Get Short Commit Hash
-        run: echo "COMMIT_HASH=$(echo $GITHUB_SHA | cut -c1-8)" >> $GITHUB_ENV
 
       - name: Capture Excel File Changes
         id: capture_changes
