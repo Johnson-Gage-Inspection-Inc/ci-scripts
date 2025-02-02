@@ -70,8 +70,9 @@ jobs:
       - name: Capture Excel File Changes
         id: capture_changes
         run: |
-          git diff --name-status origin/${{ inputs.branch }} HEAD | grep -E '\.xl' > changed_files.txt || true
-          cat changed_files.txt  # Debugging step to print the file contents
+          git fetch --unshallow origin main
+          git diff --name-status HEAD~1 HEAD | grep -E '\.xl' > changed_files.txt || true
+          cat changed_files.txt  # Debugging step
 
       - name: Count and Validate Excel Files
         id: set-excel-file
