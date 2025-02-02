@@ -80,7 +80,7 @@ jobs:
       - name: Handle Excel file count
         run: |
             if [ "$EXCEL_COUNT" -eq 0 ]; then
-              if git diff --name-status origin/${{ inputs.branch }} HEAD --diff-filter=D | grep -qE '\.xl'; then
+              if git diff --name-status origin/${{ inputs.branch }} HEAD --diff-filter=D | grep -E '\.xl'; then
                 echo "❌ The Excel file was deleted. PR must not delete the Excel file."
                 exit 1
               fi
