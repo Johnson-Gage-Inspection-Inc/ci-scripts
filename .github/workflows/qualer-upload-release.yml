@@ -20,6 +20,21 @@ jobs:
   upload:
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Load environment variables
+        run: |
+          if [ -f "${{ inputs.ENV_FILE_PATH }}" ]; then
+            echo "Loading environment variables from ${{ inputs.ENV_FILE_PATH }}"
+            cat "${{ inputs.ENV_FILE_PATH }}" >> $GITHUB_ENV
+          else
+            echo "Warning: .env file not found"
+          fi
+
+      - name: Display environment variables (for debugging)
+        run: env | sort
+
       - name: Validate Secrets
         run: |
           if [[ -z "${{ secrets.QUALER_EMAIL }}" || -z "${{ secrets.QUALER_PASSWORD }}" ]]; then
