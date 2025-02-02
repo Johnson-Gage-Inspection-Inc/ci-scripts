@@ -3,10 +3,6 @@ name: Upload & Release on Merge
 on:
   workflow_call:
     inputs:
-      ENV_FILE_PATH:
-        required: false
-        type: string
-        default: ".env"
       repo_name:
         required: true
         type: string
@@ -33,8 +29,8 @@ jobs:
   
       - name: Load environment variables
         run: |
-          echo "Loading environment variables from ${{ inputs.ENV_FILE_PATH }}"
-          cat "${{ inputs.ENV_FILE_PATH }}" >> $GITHUB_ENV
+          echo "Loading environment variables from .env"
+          cat ".env" >> $GITHUB_ENV
 
       - name: Fetch remote branch
         run: git fetch origin ${{ inputs.branch }}
@@ -76,8 +72,8 @@ jobs:
   
       - name: Load environment variables
         run: |
-          echo "Loading environment variables from ${{ inputs.ENV_FILE_PATH }}"
-          cat "${{ inputs.ENV_FILE_PATH }}" >> $GITHUB_ENV
+          echo "Loading environment variables from .env"
+          cat ".env" >> $GITHUB_ENV
 
       - name: Checkout `ci-scripts` Repository
         uses: actions/checkout@v3
