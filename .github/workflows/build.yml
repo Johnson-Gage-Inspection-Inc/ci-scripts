@@ -95,14 +95,12 @@ jobs:
       - name: Capture Excel File Changes
         id: capture_changes
         run: |
-          cd repo
           git diff --name-status origin/${{ inputs.branch }} HEAD | grep -E '\.xl' > changed_files.txt || true
           cat changed_files.txt  # Debugging step to print the file contents
 
       - name: Check if Any Excel Files Were Changed
         id: check
         run: |
-          cd repo
           if ! [ -s changed_files.txt ]; then
             echo "✅ No Excel files changed. Skipping validation."
             exit 0
