@@ -11,6 +11,10 @@ on:
       repo_name:
         required: false
         type: string
+      branch:
+        required: false
+        type: string
+        default: "main"
     secrets:
       QUALER_EMAIL:
         required: false
@@ -85,10 +89,21 @@ jobs:
               exit 1
             fi
 
-      - name: Check for Excel file changes
+      - name: Get Short Commit Hash
+        run: echo "COMMIT_HASH=$(echo $GITHUB_SHA | cut -c1-8)" >> $GITHUB_ENV
+
+      - name: Capture Excel File Changes
+        id: capture_changes
         run: |
-            git diff --quiet HEAD^ HEAD -- $EXCEL_FILE
-            if [ $? -eq 0 ]; then
-              echo "✅ No changes to Excel file. Exiting without error."
-              exit 0
-            fi
+          cd repo
+          git diff --name-status origin/${{ inputs.branch }} HEAD | grep -E '\.xl' > changed_files.txt || true
+          cat changed_files.txt  # Debugging step to print the file contents
+
+      - name: Check if Any Excel Files Were Changed
+        id: check
+        run: |
+          cd repo
+          if ! [ -s changed_files.txt ]; then
+            echo "✅ No Excel files changed. Skipping validation."
+            exit 0
+          fi
