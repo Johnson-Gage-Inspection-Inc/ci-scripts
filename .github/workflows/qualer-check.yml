@@ -77,6 +77,9 @@ jobs:
             echo "Excel files found: $EXCEL_COUNT"
             echo "EXCEL_COUNT=$EXCEL_COUNT" >> $GITHUB_ENV
             
+      - name: Fetch remote branch
+        run: git fetch origin ${{ inputs.branch }}
+
       - name: Handle Excel file count
         run: |
             if [ "$EXCEL_COUNT" -eq 0 ]; then
