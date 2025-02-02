@@ -57,3 +57,6 @@ jobs:
             echo "❌ Missing required secrets."
             exit 1
           fi
+
+      - name: Debug - show files in the current directory
+        run: ls -al
