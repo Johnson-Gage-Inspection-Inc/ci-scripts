@@ -26,7 +26,6 @@ jobs:
     outputs:
       EXCEL_FILE: ${{ steps.set-excel-file.outputs.EXCEL_FILE }}
       UPLOAD: ${{ steps.set-excel-file.outputs.UPLOAD }}
-      COMMIT_HASH: ${{ steps.get-commit-hash.outputs.COMMIT_HASH }}
     steps:
 
       - name: Checkout code
@@ -105,10 +104,6 @@ jobs:
               exit 1
             fi
 
-      - name: Get Short Commit Hash
-        id: get-commit-hash
-        run: echo "COMMIT_HASH=$(echo $GITHUB_SHA | cut -c1-8)" >> $GITHUB_OUTPUT
-
   validate-qualer-upload:
     needs: validate-excel
     if: needs.validate-excel.outputs.UPLOAD == 'true'
@@ -129,6 +124,10 @@ jobs:
           repository: Johnson-Gage-Inspection-Inc/ci-scripts
           path: ci-scripts
           token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Get Short Commit Hash
+        id: get-commit-hash
+        run: echo "COMMIT_HASH=$(echo $GITHUB_SHA | cut -c1-8)" >> $GITHUB_ENV
 
       - name: Ensure `upload_sop.sh` is Executable
         if: env.skip != 'true'
