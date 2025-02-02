@@ -77,7 +77,9 @@ jobs:
               echo "✅ No Excel files found. Exiting without error."
               exit 0
             elif [ "$EXCEL_COUNT" -eq 1 ]; then
-              echo "✅ Exactly one Excel file found. Proceeding with workflow."
+              EXCEL_FILE=$(find . -type f -iname "*.xls*" | head -n 1)
+              echo "✅ Using Excel file: $EXCEL_FILE"
+              echo "EXCEL_FILE=$EXCEL_FILE" >> $GITHUB_ENV
             else
               echo "❌ More than one Excel file found! Exiting with error."
               exit 1
