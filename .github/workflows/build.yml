@@ -35,9 +35,18 @@ jobs:
       - name: Display environment variables (for debugging)
         run: env | sort
 
-      - name: Validate environment variables (SOP_ID, DOC_ID, DOC_TITLE, DOC_DETAILS)
+      - name: Validate required environment variables
         run: |
-          if [[ -z "${{ env.SOP_ID }}" || -z "${{ env.DOC_ID }}" || -z "${{ env.DOC_TITLE }}" || -z "${{ env.DOC_DETAILS }}" ]]; then
-            echo "❌ Missing required environment variables."
+          REQUIRED_VARS=("SOP_ID" "DOC_ID" "DOC_TITLE" "DOC_DETAILS")
+          MISSING_VARS=()
+          
+          for VAR in "${REQUIRED_VARS[@]}"; do
+            if [[ -z "${!VAR}" ]]; then
+              MISSING_VARS+=("$VAR")
+            fi
+          done
+
+          if [[ ${#MISSING_VARS[@]} -ne 0 ]]; then
+            echo "Error: Missing required environment variables: ${MISSING_VARS[*]}"
             exit 1
           fi
