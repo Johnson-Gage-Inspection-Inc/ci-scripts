@@ -1,3 +1,4 @@
+# ./ci-scripts.build.yml
 name: Reusable Build Workflow
 
 on:
@@ -60,3 +61,24 @@ jobs:
 
       - name: Debug - show files in the current directory
         run: ls -al
+
+      - name: Debug - show all excel files ("*.xl...")
+        run: find -type f -name "*.xl*"
+
+      - name: Count Excel files
+        run: |
+            EXCEL_COUNT=$(find . -type f -iname "*.xls*" | wc -l)
+            echo "Excel files found: $EXCEL_COUNT"
+            echo "EXCEL_COUNT=$EXCEL_COUNT" >> $GITHUB_ENV
+            
+      - name: Handle Excel file count
+        run: |
+            if [ "$EXCEL_COUNT" -eq 0 ]; then
+              echo "✅ No Excel files found. Exiting without error."
+              exit 0
+            elif [ "$EXCEL_COUNT" -eq 1 ]; then
+              echo "✅ Exactly one Excel file found. Proceeding with workflow."
+            else
+              echo "❌ More than one Excel file found! Exiting with error."
+              exit 1
+            fi
