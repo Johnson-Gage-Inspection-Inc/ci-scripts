@@ -128,3 +128,8 @@ jobs:
           QUALER_PASSWORD: ${{ secrets.QUALER_PASSWORD }}
           MERGED_FILE: ${{ env.EXCEL_FILE }}
           COMMIT_HASH: ${{ env.COMMIT_HASH }}
+          AUTHOR_NAME: ${{ github.actor }}
+          SOP_ID: ${{ env.SOP_ID }}
+          DOC_ID: ${{ env.DOC_ID }}
+          DOC_TITLE: ${{ env.DOC_TITLE }}
+          DOC_DETAILS: ${{ env.DOC_DETAILS }}
