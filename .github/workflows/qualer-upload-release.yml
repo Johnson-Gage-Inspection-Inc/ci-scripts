@@ -21,7 +21,7 @@ on:
         required: true
 
 jobs:
-  validate-excel:
+  re-validate:
     runs-on: ubuntu-latest
     outputs:
       EXCEL_FILE: ${{ steps.set-excel-file.outputs.EXCEL_FILE }}
@@ -33,35 +33,8 @@ jobs:
   
       - name: Load environment variables
         run: |
-          if [ -f "${{ inputs.ENV_FILE_PATH }}" ]; then
-            echo "Loading environment variables from ${{ inputs.ENV_FILE_PATH }}"
-            cat "${{ inputs.ENV_FILE_PATH }}" >> $GITHUB_ENV
-          else
-            echo "Warning: .env file not found"
-          fi
-
-      - name: Validate required environment variables
-        run: |
-          REQUIRED_VARS=("SOP_ID" "DOC_ID" "DOC_TITLE" "DOC_DETAILS")
-          MISSING_VARS=()
-          
-          for VAR in "${REQUIRED_VARS[@]}"; do
-            if [[ -z "${!VAR}" ]]; then
-              MISSING_VARS+=("$VAR")
-            fi
-          done
-
-          if [[ ${#MISSING_VARS[@]} -ne 0 ]]; then
-            echo "Error: Missing required environment variables: ${MISSING_VARS[*]}"
-            exit 1
-          fi
-
-      - name: Validate Secrets
-        run: |
-          if [[ -z "${{ secrets.QUALER_EMAIL }}" || -z "${{ secrets.QUALER_PASSWORD }}" ]]; then
-            echo "❌ Missing required secrets."
-            exit 1
-          fi
+          echo "Loading environment variables from ${{ inputs.ENV_FILE_PATH }}"
+          cat "${{ inputs.ENV_FILE_PATH }}" >> $GITHUB_ENV
 
       - name: Fetch remote branch
         run: git fetch origin ${{ inputs.branch }}
@@ -72,7 +45,6 @@ jobs:
           git fetch --unshallow origin main
           git diff --name-status HEAD~1 HEAD | grep -E '\.xl' > changed_files.txt || true
           cat changed_files.txt  # Debugging step
-
 
       - name: Count and Validate Excel Files
         id: set-excel-file
@@ -93,9 +65,9 @@ jobs:
               fi
             fi
 
-  validate-qualer-upload:
-    needs: validate-excel
-    if: needs.validate-excel.outputs.UPLOAD == 'true'
+  upload-to-qualer:
+    needs: re-validate
+    if: needs.re-validate.outputs.UPLOAD == 'true'
     runs-on: ubuntu-latest
     steps:
 
@@ -126,6 +98,6 @@ jobs:
         env:
           QUALER_EMAIL: ${{ secrets.QUALER_EMAIL }}
           QUALER_PASSWORD: ${{ secrets.QUALER_PASSWORD }}
-          EXCEL_FILE: ${{ needs.validate-excel.outputs.EXCEL_FILE }}
+          EXCEL_FILE: ${{ needs.re-validate.outputs.EXCEL_FILE }}
           COMMIT_HASH: ${{ env.COMMIT_HASH }}
           AUTHOR_NAME: ${{ github.actor }}
