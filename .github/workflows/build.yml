@@ -81,6 +81,10 @@ jobs:
       - name: Handle Excel file count
         run: |
             if [ "$EXCEL_COUNT" -eq 0 ]; then
+              if git diff --name-status origin/${{ inputs.branch }} HEAD --diff-filter=D | grep -qE '\.xl'; then
+                echo "❌ The Excel file was deleted. PR must not delete the Excel file."
+                exit 1
+              fi
               echo "✅ No Excel files found. Exiting without error."
               exit 0
             elif [ "$EXCEL_COUNT" -eq 1 ]; then
