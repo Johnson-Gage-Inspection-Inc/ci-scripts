@@ -140,6 +140,6 @@ jobs:
         env:
           QUALER_EMAIL: ${{ secrets.QUALER_EMAIL }}
           QUALER_PASSWORD: ${{ secrets.QUALER_PASSWORD }}
-          EXCEL_FILE: ${{ needs.set-excel-file.outputs.EXCEL_FILE }}
+          EXCEL_FILE: ${{ needs.validate-excel.outputs.EXCEL_FILE }}
           COMMIT_HASH: ${{ env.COMMIT_HASH }}
           AUTHOR_NAME: ${{ github.actor }}
