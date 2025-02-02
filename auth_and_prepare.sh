@@ -17,6 +17,8 @@ for var in "${required_vars[@]}"; do
     fi
 done
 
+echo "✅ All required environment variables are set."
+
 mkdir -p tmp
 
 # Step 1: Get the login page to set cookies
