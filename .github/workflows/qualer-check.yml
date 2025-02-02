@@ -110,6 +110,13 @@ jobs:
               exit 1
             fi
 
+      - name: Ensure EXCEL_FILE variable is set
+        run: |
+          if [ -z "$EXCEL_FILE" ]; then
+            echo "❌ EXCEL_FILE variable is not set. Are you running this in the right context? Exiting with error."
+            exit 1
+          fi
+
       - name: Checkout `ci-scripts` Repository
         uses: actions/checkout@v3
         with:
@@ -118,7 +125,9 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Ensure `validate_upload.sh` is Executable
-        run: chmod +x ./ci-scripts/validate_upload.sh
+        run: |
+         chmod +x ./ci-scripts/validate_upload.sh
+         chmod +x ./ci-scripts/auth_and_prepare.sh
 
       - name: Run Upload Validation
         if: env.skip != 'true'
@@ -126,10 +135,10 @@ jobs:
         env:
           QUALER_EMAIL: ${{ secrets.QUALER_EMAIL }}
           QUALER_PASSWORD: ${{ secrets.QUALER_PASSWORD }}
-          EXCEL_FILE: ${{ env.EXCEL_FILE }}
           COMMIT_HASH: ${{ env.COMMIT_HASH }}
           AUTHOR_NAME: ${{ github.actor }}
           SOP_ID: ${{ env.SOP_ID }}
           DOC_ID: ${{ env.DOC_ID }}
           DOC_TITLE: ${{ env.DOC_TITLE }}
           DOC_DETAILS: ${{ env.DOC_DETAILS }}
+          EXCEL_FILE: ${{ env.EXCEL_FILE }}
