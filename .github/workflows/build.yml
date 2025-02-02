@@ -50,3 +50,10 @@ jobs:
             echo "Error: Missing required environment variables: ${MISSING_VARS[*]}"
             exit 1
           fi
+
+      - name: Validate Secrets
+        run: |
+          if [[ -z "${{ secrets.QUALER_EMAIL }}" || -z "${{ secrets.QUALER_PASSWORD }}" ]]; then
+            echo "❌ Missing required secrets."
+            exit 1
+          fi
