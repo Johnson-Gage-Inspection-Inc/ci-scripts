@@ -71,7 +71,7 @@ jobs:
         id: capture_changes
         run: |
           git fetch --unshallow origin main
-          git diff --name-only HEAD~1 HEAD | grep -E '\.xl' > changed_files.txt || true
+          git diff --name-status HEAD~1 HEAD | grep -E '\.xl' > changed_files.txt || true
           cat changed_files.txt  # Debugging step
 
 
