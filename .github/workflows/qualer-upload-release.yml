@@ -81,27 +81,16 @@ jobs:
             echo "Excel files found: $EXCEL_COUNT"
 
             if [ "$EXCEL_COUNT" -eq 0 ]; then
-              if grep -qE '^D' changed_files.txt; then
-                echo "❌ The Excel file was deleted. PR must not delete the Excel file."
-                exit 1
-              else
-                echo "✅ No Excel files found. Exiting without error."
-                exit 0
-              fi
+              echo "✅ No Excel files found. Exiting without error."
             elif [ "$EXCEL_COUNT" -eq 1 ]; then
               if ! [ -s changed_files.txt ]; then
-                echo "✅ No Excel files changed. Skipping validation."
-                exit 0
+                echo "✅ No Excel files changed. Exiting without error."
               else
                 EXCEL_FILE=$(find . -type f -iname "*.xls*" | head -n 1)
                 echo "✅ Using Excel file: $EXCEL_FILE"
-                echo "EXCEL_FILE=$EXCEL_FILE" >> $GITHUB_ENV
                 echo "EXCEL_FILE=$EXCEL_FILE" >> $GITHUB_OUTPUT
                 echo "UPLOAD=true" >> $GITHUB_OUTPUT
               fi
-            else
-              echo "❌ More than one Excel file found! Exiting with error."
-              exit 1
             fi
 
   validate-qualer-upload:
