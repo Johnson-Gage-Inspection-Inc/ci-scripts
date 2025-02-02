@@ -25,7 +25,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       EXCEL_FILE: ${{ steps.set-excel-file.outputs.EXCEL_FILE }}
-      SKIP_UPLOAD: ${{ steps.set-excel-file.outputs.SKIP_UPLOAD }}
+      UPLOAD: ${{ steps.set-excel-file.outputs.UPLOAD }}
       COMMIT_HASH: ${{ steps.get-commit-hash.outputs.COMMIT_HASH }}
     steps:
 
@@ -71,8 +71,9 @@ jobs:
         id: capture_changes
         run: |
           git fetch --unshallow origin main
-          git diff --name-status HEAD~1 HEAD | grep -E '\.xl' > changed_files.txt || true
+          git diff --name-only HEAD~1 HEAD | grep -E '\.xl' > changed_files.txt || true
           cat changed_files.txt  # Debugging step
+
 
       - name: Count and Validate Excel Files
         id: set-excel-file
@@ -86,19 +87,18 @@ jobs:
                 exit 1
               else
                 echo "✅ No Excel files found. Exiting without error."
-                echo "SKIP_UPLOAD=true" >> $GITHUB_OUTPUT
                 exit 0
               fi
             elif [ "$EXCEL_COUNT" -eq 1 ]; then
               if ! [ -s changed_files.txt ]; then
                 echo "✅ No Excel files changed. Skipping validation."
-                echo "SKIP_UPLOAD=true" >> $GITHUB_OUTPUT
                 exit 0
               else
                 EXCEL_FILE=$(find . -type f -iname "*.xls*" | head -n 1)
                 echo "✅ Using Excel file: $EXCEL_FILE"
                 echo "EXCEL_FILE=$EXCEL_FILE" >> $GITHUB_ENV
                 echo "EXCEL_FILE=$EXCEL_FILE" >> $GITHUB_OUTPUT
+                echo "UPLOAD=true" >> $GITHUB_OUTPUT
               fi
             else
               echo "❌ More than one Excel file found! Exiting with error."
@@ -111,7 +111,7 @@ jobs:
 
   validate-qualer-upload:
     needs: validate-excel
-    if: needs.validate-excel.outputs.SKIP_UPLOAD != 'true'
+    if: needs.validate-excel.outputs.UPLOAD == 'true'
     runs-on: ubuntu-latest
     steps:
 
