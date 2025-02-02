@@ -10,6 +10,11 @@ on:
       repo_name:
         required: false
         type: string
+    secrets:
+      QUALER_EMAIL:
+        required: false
+      QUALER_PASSWORD:
+        required: false
 
 jobs:
   build:
