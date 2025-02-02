@@ -17,6 +17,8 @@ for var in "${required_vars[@]}"; do
     fi
 done
 
+mkdir -p tmp
+
 # Step 1: Get the login page to set cookies
 curl -s -c tmp/cookies.txt 'https://jgiquality.qualer.com/login' -o /dev/null || exit 2
 
