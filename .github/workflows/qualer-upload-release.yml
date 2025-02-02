@@ -21,14 +21,16 @@ on:
         required: true
 
 jobs:
-  validate-upload:
+  validate-excel:
     runs-on: ubuntu-latest
+    outputs:
+      EXCEL_FILE: ${{ steps.set-excel-file.outputs.EXCEL_FILE }}
+      SKIP_UPLOAD: ${{ steps.set-excel-file.outputs.SKIP_UPLOAD }}
+      COMMIT_HASH: ${{ steps.get-commit-hash.outputs.COMMIT_HASH }}
     steps:
+
       - name: Checkout code
         uses: actions/checkout@v4
-
-      - name: Get Short Commit Hash
-        run: echo "COMMIT_HASH=$(echo $GITHUB_SHA | cut -c1-8)" >> $GITHUB_ENV
   
       - name: Load environment variables
         run: |
@@ -38,9 +40,6 @@ jobs:
           else
             echo "Warning: .env file not found"
           fi
-
-      - name: Display environment variables (for debugging)
-        run: env | sort
 
       - name: Validate required environment variables
         run: |
@@ -65,18 +64,6 @@ jobs:
             exit 1
           fi
 
-      - name: Debug - show files in the current directory
-        run: ls -al
-
-      - name: Debug - show all excel files ("*.xl...")
-        run: find -type f -name "*.xl*"
-
-      - name: Count Excel files
-        run: |
-            EXCEL_COUNT=$(find . -type f -iname "*.xl*" | wc -l)
-            echo "Excel files found: $EXCEL_COUNT"
-            echo "EXCEL_COUNT=$EXCEL_COUNT" >> $GITHUB_ENV
-            
       - name: Fetch remote branch
         run: git fetch origin ${{ inputs.branch }}
 
@@ -86,36 +73,54 @@ jobs:
           git diff --name-status origin/${{ inputs.branch }} HEAD | grep -E '\.xl' > changed_files.txt || true
           cat changed_files.txt  # Debugging step to print the file contents
 
-      - name: Handle Excel file count and changes
+      - name: Count and Validate Excel Files
+        id: set-excel-file
         run: |
+            EXCEL_COUNT=$(find . -type f -iname "*.xl*" | wc -l)
+            echo "Excel files found: $EXCEL_COUNT"
+
             if [ "$EXCEL_COUNT" -eq 0 ]; then
               if grep -qE '^D' changed_files.txt; then
                 echo "❌ The Excel file was deleted. PR must not delete the Excel file."
                 exit 1
               else
                 echo "✅ No Excel files found. Exiting without error."
+                echo "SKIP_UPLOAD=true" >> $GITHUB_OUTPUT
                 exit 0
               fi
             elif [ "$EXCEL_COUNT" -eq 1 ]; then
               if ! [ -s changed_files.txt ]; then
                 echo "✅ No Excel files changed. Skipping validation."
+                echo "SKIP_UPLOAD=true" >> $GITHUB_OUTPUT
                 exit 0
               else
                 EXCEL_FILE=$(find . -type f -iname "*.xls*" | head -n 1)
                 echo "✅ Using Excel file: $EXCEL_FILE"
                 echo "EXCEL_FILE=$EXCEL_FILE" >> $GITHUB_ENV
+                echo "EXCEL_FILE=$EXCEL_FILE" >> $GITHUB_OUTPUT
               fi
             else
               echo "❌ More than one Excel file found! Exiting with error."
               exit 1
             fi
 
-      - name: Ensure EXCEL_FILE variable is set
+      - name: Get Short Commit Hash
+        id: get-commit-hash
+        run: echo "COMMIT_HASH=$(echo $GITHUB_SHA | cut -c1-8)" >> $GITHUB_OUTPUT
+
+  validate-qualer-upload:
+    needs: validate-excel
+    if: needs.validate-excel.outputs.SKIP_UPLOAD != 'true'
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+  
+      - name: Load environment variables
         run: |
-          if [ -z "$EXCEL_FILE" ]; then
-            echo "❌ EXCEL_FILE variable is not set. Are you running this in the right context? Exiting with error."
-            exit 1
-          fi
+          echo "Loading environment variables from ${{ inputs.ENV_EXCEL_FILE }}"
+          cat "${{ inputs.ENV_EXCEL_FILE }}" >> $GITHUB_ENV
 
       - name: Checkout `ci-scripts` Repository
         uses: actions/checkout@v3
@@ -134,4 +139,6 @@ jobs:
         env:
           QUALER_EMAIL: ${{ secrets.QUALER_EMAIL }}
           QUALER_PASSWORD: ${{ secrets.QUALER_PASSWORD }}
-          EXCEL_FILE: ${{ env.EXCEL_FILE }}
+          EXCEL_FILE: ${{ needs.validate.outputs.EXCEL_FILE }}
+          COMMIT_HASH: ${{ env.COMMIT_HASH }}
+          AUTHOR_NAME: ${{ github.actor }}

@@ -25,6 +25,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       EXCEL_FILE: ${{ steps.set-excel-file.outputs.EXCEL_FILE }}
+      SKIP_UPLOAD: ${{ steps.set-excel-file.outputs.SKIP_UPLOAD }}
       COMMIT_HASH: ${{ steps.get-commit-hash.outputs.COMMIT_HASH }}
     steps:
 
@@ -84,11 +85,13 @@ jobs:
                 exit 1
               else
                 echo "✅ No Excel files found. Exiting without error."
+                echo "SKIP_UPLOAD=true" >> $GITHUB_OUTPUT
                 exit 0
               fi
             elif [ "$EXCEL_COUNT" -eq 1 ]; then
               if ! [ -s changed_files.txt ]; then
                 echo "✅ No Excel files changed. Skipping validation."
+                echo "SKIP_UPLOAD=true" >> $GITHUB_OUTPUT
                 exit 0
               else
                 EXCEL_FILE=$(find . -type f -iname "*.xls*" | head -n 1)
@@ -105,8 +108,9 @@ jobs:
         id: get-commit-hash
         run: echo "COMMIT_HASH=$(echo $GITHUB_SHA | cut -c1-8)" >> $GITHUB_OUTPUT
 
-  upload-excel:
+  validate-qualer-upload:
     needs: validate-excel
+    if: needs.validate-excel.outputs.SKIP_UPLOAD != 'true'
     runs-on: ubuntu-latest
     steps:
 
