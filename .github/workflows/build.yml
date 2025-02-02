@@ -103,6 +103,8 @@ jobs:
               exit 1
             fi
 
+      - name: Fetch remote branch
+        run: git fetch origin ${{ inputs.branch }}
 
       - name: Check if Any Excel Files Were Changed
         id: check
