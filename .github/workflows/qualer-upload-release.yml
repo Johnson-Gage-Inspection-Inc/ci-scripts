@@ -130,11 +130,9 @@ jobs:
         run: echo "COMMIT_HASH=$(echo $GITHUB_SHA | cut -c1-8)" >> $GITHUB_ENV
 
       - name: Ensure `upload_sop.sh` is Executable
-        if: env.skip != 'true'
         run: chmod +x ./ci-scripts/upload_sop.sh
 
       - name: Run Upload Script
-        if: env.skip != 'true'
         run: ./ci-scripts/upload_sop.sh
         env:
           QUALER_EMAIL: ${{ secrets.QUALER_EMAIL }}
