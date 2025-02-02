@@ -74,19 +74,26 @@ jobs:
 
       - name: Count Excel files
         run: |
-            EXCEL_COUNT=$(find . -type f -iname "*.xls*" | wc -l)
+            EXCEL_COUNT=$(find . -type f -iname "*.xl*" | wc -l)
             echo "Excel files found: $EXCEL_COUNT"
             echo "EXCEL_COUNT=$EXCEL_COUNT" >> $GITHUB_ENV
             
+      - name: Capture Excel File Changes
+        id: capture_changes
+        run: |
+          git diff --name-status origin/${{ inputs.branch }} HEAD | grep -E '\.xl' > changed_files.txt || true
+          cat changed_files.txt  # Debugging step to print the file contents
+
       - name: Handle Excel file count
         run: |
             if [ "$EXCEL_COUNT" -eq 0 ]; then
-              if git diff --name-status origin/${{ inputs.branch }} HEAD --diff-filter=D | grep -qE '\.xl'; then
+              if grep -qE '^D' changed_files.txt; then
                 echo "❌ The Excel file was deleted. PR must not delete the Excel file."
                 exit 1
+              else
+                echo "✅ No Excel files found. Exiting without error."
+                exit 0
               fi
-              echo "✅ No Excel files found. Exiting without error."
-              exit 0
             elif [ "$EXCEL_COUNT" -eq 1 ]; then
               EXCEL_FILE=$(find . -type f -iname "*.xls*" | head -n 1)
               echo "✅ Using Excel file: $EXCEL_FILE"
@@ -96,11 +103,6 @@ jobs:
               exit 1
             fi
 
-      - name: Capture Excel File Changes
-        id: capture_changes
-        run: |
-          git diff --name-status origin/${{ inputs.branch }} HEAD | grep -E '\.xl' > changed_files.txt || true
-          cat changed_files.txt  # Debugging step to print the file contents
 
       - name: Check if Any Excel Files Were Changed
         id: check
