@@ -85,7 +85,7 @@ jobs:
         id: check
         run: |
           cd repo
-          if git diff --quiet origin/${{ inputs.branch }} HEAD -- '*.{xlsm,xlsx,xltm,xltx,xlsb,xls,xlt}'; then
+          if git diff --name-status origin/${{ inputs.branch }} HEAD --diff-filter=AM | grep -E '\.xl'; then
             echo "✅ No Excel files changed. Skipping validation."
             echo "skip=true" >> $GITHUB_ENV
             exit 0
@@ -95,19 +95,19 @@ jobs:
         if: env.skip != 'true'
         run: |
           cd repo
-          FILE_COUNT=$(git diff --name-only origin/${{ inputs.branch }} HEAD -- '*.{xlsm,xlsx,xltm,xltx,xlsb,xls,xlt}' | wc -l)
+          FILE_COUNT=$(git diff --name-only origin/${{ inputs.branch }} HEAD --diff-filter=AM | grep -E '\.xl' | wc -l)
           if [ "$FILE_COUNT" -ne 1 ]; then
             echo "❌ More than one Excel file changed. PR must contain only one Excel update."
             exit 1
           fi
-          FILE_PATH=$(git diff --name-only origin/${{ inputs.branch }} HEAD -- '*.{xlsm,xlsx,xltm,xltx,xlsb,xls,xlt}')
+          FILE_PATH=$(git diff --name-only origin/${{ inputs.branch }} HEAD --diff-filter=AM | grep -E '\.xl')
           echo "MERGED_FILE=$FILE_PATH" >> $GITHUB_ENV
 
       - name: Ensure Excel File is Not Deleted
         if: env.skip != 'true'
         run: |
           cd repo
-          if git diff --name-status origin/${{ inputs.branch }} HEAD -- ${{ env.MERGED_FILE }} | grep -q '^D'; then
+          if git diff --name-status origin/${{ inputs.branch }} HEAD --diff-filter=D | grep -qE '\.xl'; then
             echo "❌ The Excel file was deleted. PR must not delete the Excel file."
             exit 1
           fi
