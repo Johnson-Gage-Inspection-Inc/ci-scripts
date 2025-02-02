@@ -115,12 +115,8 @@ jobs:
   
       - name: Load environment variables
         run: |
-          if [ -f "${{ inputs.ENV_EXCEL_FILE }}" ]; then
-            echo "Loading environment variables from ${{ inputs.ENV_EXCEL_FILE }}"
-            cat "${{ inputs.ENV_EXCEL_FILE }}" >> $GITHUB_ENV
-          else
-            echo "Warning: .env file not found"
-          fi
+          echo "Loading environment variables from ${{ inputs.ENV_EXCEL_FILE }}"
+          cat "${{ inputs.ENV_EXCEL_FILE }}" >> $GITHUB_ENV
 
       - name: Checkout `ci-scripts` Repository
         uses: actions/checkout@v3
