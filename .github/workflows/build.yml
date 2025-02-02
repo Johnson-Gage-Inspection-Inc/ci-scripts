@@ -84,3 +84,11 @@ jobs:
               echo "❌ More than one Excel file found! Exiting with error."
               exit 1
             fi
+
+      - name: Check for Excel file changes
+        run: |
+            git diff --quiet HEAD^ HEAD -- $EXCEL_FILE
+            if [ $? -eq 0 ]; then
+              echo "✅ No changes to Excel file. Exiting without error."
+              exit 0
+            fi
