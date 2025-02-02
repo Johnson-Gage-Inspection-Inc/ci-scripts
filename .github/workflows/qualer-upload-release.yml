@@ -35,6 +35,22 @@ jobs:
       - name: Display environment variables (for debugging)
         run: env | sort
 
+      - name: Validate required environment variables
+        run: |
+          REQUIRED_VARS=("SOP_ID" "DOC_ID" "DOC_TITLE" "DOC_DETAILS")
+          MISSING_VARS=()
+          
+          for VAR in "${REQUIRED_VARS[@]}"; do
+            if [[ -z "${!VAR}" ]]; then
+              MISSING_VARS+=("$VAR")
+            fi
+          done
+
+          if [[ ${#MISSING_VARS[@]} -ne 0 ]]; then
+            echo "Error: Missing required environment variables: ${MISSING_VARS[*]}"
+            exit 1
+          fi
+
       - name: Validate Secrets
         run: |
           if [[ -z "${{ secrets.QUALER_EMAIL }}" || -z "${{ secrets.QUALER_PASSWORD }}" ]]; then
