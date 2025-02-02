@@ -78,6 +78,9 @@ jobs:
             echo "Excel files found: $EXCEL_COUNT"
             echo "EXCEL_COUNT=$EXCEL_COUNT" >> $GITHUB_ENV
             
+      - name: Fetch remote branch
+        run: git fetch origin ${{ inputs.branch }}
+
       - name: Capture Excel File Changes
         id: capture_changes
         run: |
@@ -102,9 +105,6 @@ jobs:
               echo "❌ More than one Excel file found! Exiting with error."
               exit 1
             fi
-
-      - name: Fetch remote branch
-        run: git fetch origin ${{ inputs.branch }}
 
       - name: Check if Any Excel Files Were Changed
         id: check
