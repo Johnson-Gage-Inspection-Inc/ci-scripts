@@ -109,7 +109,21 @@ jobs:
 
       - name: Get Release Tag (Current Date)
         id: release-tag
-        run: echo "RELEASE_TAG=$(date +%Y-%m-%d)" >> $GITHUB_ENV
+        run: echo "RELEASE_TAG=$(date +%Y-%m-%d_%H-%M-%S)" >> $GITHUB_ENV
+
+      - name: Copy Excel File with Date Suffix
+        id: copy-excel
+        run: |
+          ORIGINAL_FILE="${{ needs.re-validate.outputs.EXCEL_FILE }}"
+          FILE_DIR=$(dirname "$ORIGINAL_FILE")
+          FILE_NAME=$(basename "$ORIGINAL_FILE")
+          FILE_BASE="${FILE_NAME%.*}"
+          FILE_EXT="${FILE_NAME##*.}"
+          TODAY=$(date +%Y-%m-%d)
+          RENAMED_FILE="${FILE_DIR}/${FILE_BASE}_${TODAY}.${FILE_EXT}"
+          cp "$ORIGINAL_FILE" "$RENAMED_FILE"
+          echo "RENAMED_FILE=$RENAMED_FILE" >> $GITHUB_ENV
+          echo "✅ Copied file to: $RENAMED_FILE"
 
       - name: Create GitHub Release
         env:
@@ -120,9 +134,9 @@ jobs:
             --title "Release ${{ env.RELEASE_TAG }}" \
             --notes "Automated release for commit ${{ env.COMMIT_HASH }} by ${{ github.actor }}."
 
-      - name: Upload Excel File as Release Asset
+      - name: Upload Copied Excel File as Release Asset
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release upload ${{ env.RELEASE_TAG }} ${{ needs.re-validate.outputs.EXCEL_FILE }} \
+          gh release upload ${{ env.RELEASE_TAG }} ${{ env.RENAMED_FILE }} \
             --repo "${{ github.repository }}"
