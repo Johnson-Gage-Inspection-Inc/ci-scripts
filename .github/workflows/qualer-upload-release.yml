@@ -15,6 +15,8 @@ on:
         required: true
       QUALER_PASSWORD:
         required: true
+      GITHUB_TOKEN:
+        required: true
 
 jobs:
   re-validate:
@@ -97,3 +99,25 @@ jobs:
           EXCEL_FILE: ${{ needs.re-validate.outputs.EXCEL_FILE }}
           COMMIT_HASH: ${{ env.COMMIT_HASH }}
           AUTHOR_NAME: ${{ github.actor }}
+
+  create-github-release:
+    needs: re-validate
+    if: needs.re-validate.outputs.UPLOAD == 'true'
+    runs-on: ubuntu-latest
+    steps:
+    
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Get Release Tag (Current Date)
+        id: release-tag
+        run: echo "RELEASE_TAG=$(date +%Y-%m-%d)" >> $GITHUB_ENV
+
+      - name: Create GitHub Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create ${{ env.RELEASE_TAG }} \
+            --repo "${{ github.repository }}" \
+            --title "Release ${{ env.RELEASE_TAG }}" \
+            --notes "Automated release for commit ${{ env.COMMIT_HASH }} by ${{ github.actor }}."
