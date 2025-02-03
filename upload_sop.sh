@@ -81,6 +81,9 @@ else
   exit 3
 fi
 
+# Replace "\n" with a proper line break in DOC_DETAILS
+DOC_DETAILS=$(echo "$DOC_DETAILS" | sed 's/\\n/\n/g')
+
 status_code=$(curl 'https://jgiquality.qualer.com/Sop/Sop' \
   -X POST -b tmp/cookies.txt -c tmp/cookies.txt \
   -o tmp/update_response.json \
