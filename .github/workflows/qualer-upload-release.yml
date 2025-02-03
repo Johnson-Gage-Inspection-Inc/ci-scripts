@@ -119,3 +119,10 @@ jobs:
             --repo "${{ github.repository }}" \
             --title "Release ${{ env.RELEASE_TAG }}" \
             --notes "Automated release for commit ${{ env.COMMIT_HASH }} by ${{ github.actor }}."
+
+      - name: Upload Excel File as Release Asset
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release upload ${{ env.RELEASE_TAG }} ${{ needs.re-validate.outputs.EXCEL_FILE }} \
+            --repo "${{ github.repository }}"
