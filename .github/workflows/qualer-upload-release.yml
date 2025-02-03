@@ -99,7 +99,7 @@ jobs:
           AUTHOR_NAME: ${{ github.actor }}
 
   create-github-release:
-    needs: upload-to-qualer
+    needs: re-validate
     if: needs.re-validate.outputs.UPLOAD == 'true'
     runs-on: ubuntu-latest
     steps:
