@@ -200,19 +200,6 @@ jobs:
 
           UPLOAD_URL="https://jgiquality.sharepoint.com/sites/JGI/_api/web/lists/getbytitle('Templates')/RootFolder/Files/Add(url='${UNIQUE_FILE_NAME}',overwrite=true)"
 
-      - name: Upload Excel File to SharePoint
-        env:
-          ACCESS_TOKEN: ${{ env.ACCESS_TOKEN }}
-        run: |
-          FILE_PATH="${{ needs.re-validate.outputs.EXCEL_FILE }}"
-          FILE_NAME=$(basename "$FILE_PATH")
-          TODAY=$(date +%Y-%m-%d_%H-%M-%S)
-          UNIQUE_FILE_NAME="${FILE_NAME%.*}_$TODAY.${FILE_NAME##*.}"
-
-          # Correct SharePoint API URL
-          UPLOAD_URL="https://jgiquality.sharepoint.com/sites/JGI/_api/web/lists/getbytitle('Templates')/RootFolder/Files/Add(url='${UNIQUE_FILE_NAME}',overwrite=true)"
-
-          # Upload file and capture response
           RESPONSE=$(curl -X POST "$UPLOAD_URL" \
             -H "Authorization: Bearer $ACCESS_TOKEN" \
             -H "Accept: application/json;odata=verbose" \
@@ -233,4 +220,3 @@ jobs:
           echo "Files in Templates: $FILES_LIST"
 
           echo "✅ Uploaded $UNIQUE_FILE_NAME to SharePoint"
-  
