@@ -219,4 +219,9 @@ jobs:
 
           echo "Files in Templates: $FILES_LIST"
 
-          echo "✅ Uploaded $UNIQUE_FILE_NAME to SharePoint"
+          if echo "$FILES_LIST" | grep -q "$UNIQUE_FILE_NAME"; then
+            echo "✅ Uploaded $UNIQUE_FILE_NAME to SharePoint"
+          else
+            echo "❌ File not found in SharePoint. Exiting."
+            exit 1
+          fi
