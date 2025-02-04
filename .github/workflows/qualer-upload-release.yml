@@ -175,10 +175,10 @@ jobs:
         run: |
           TOKEN_RESPONSE=$(curl -X POST \
             -d "grant_type=client_credentials" \
-            -d "client_id=${SHAREPOINT_CLIENT_ID}@${SHAREPOINT_TENANT_ID}" \
+            -d "client_id=${SHAREPOINT_CLIENT_ID}" \
             -d "client_secret=${SHAREPOINT_CLIENT_SECRET}" \
-            -d "resource=https://graph.microsoft.com/" \
-            "https://login.microsoftonline.com/${SHAREPOINT_TENANT_ID}/oauth2/token")
+            -d "resource=https://jgiquality.sharepoint.com/" \
+            "https://accounts.accesscontrol.windows.net/${SHAREPOINT_TENANT_ID}/tokens/OAuth/2")
           echo "Token Response: $TOKEN_RESPONSE"  # Debugging step
 
           ACCESS_TOKEN=$(echo $TOKEN_RESPONSE | jq -r '.access_token')
