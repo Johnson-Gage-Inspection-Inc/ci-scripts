@@ -204,7 +204,7 @@ jobs:
             -H "Authorization: Bearer $ACCESS_TOKEN" \
             -H "Accept: application/json;odata=verbose" \
             -H "Content-Type: application/octet-stream" \
-            --data-binary @"$FILE_PATH")
+            -F "file=@$FILE_PATH")
 
           echo "SharePoint API Response: $RESPONSE"
 
