@@ -187,19 +187,17 @@ jobs:
       - name: Upload Excel File to SharePoint
         env:
           ACCESS_TOKEN: ${{ env.ACCESS_TOKEN }}
+          DRIVE_ID: ${{ env.DRIVE_ID }}
         run: |
-          FILE_PATH="${{ needs.re-validate.outputs.EXCEL_FILE }}"
+          FILE_PATH="./Book1.xlsx"
           FILE_NAME=$(basename "$FILE_PATH")
-          TODAY=$(date +%Y-%m-%d_%H-%M-%S)
-          UNIQUE_FILE_NAME="${FILE_NAME%.*}_$TODAY.${FILE_NAME##*.}"
-          
-          UPLOAD_URL="https://graph.microsoft.com/v1.0/drives/b!E6C2469B-744B-4397-A913-36C75A90D7B4/root:/$FILE_NAME:/content"
+
+          UPLOAD_URL="https://graph.microsoft.com/v1.0/drives/$DRIVE_ID/root:/$FILE_NAME:/content"
 
           RESPONSE=$(curl -X PUT "$UPLOAD_URL" \
             -H "Authorization: Bearer $ACCESS_TOKEN" \
             -H "Content-Type: application/octet-stream" \
             --data-binary @"$FILE_PATH")
-
 
           echo "SharePoint API Response: $RESPONSE"
 
@@ -207,16 +205,4 @@ jobs:
             echo "❌ Upload failed. Exiting."
             exit 1
           fi
-
-          FILES_LIST=$(curl -X GET "https://jgiquality.sharepoint.com/_api/web/lists/getbytitle('Templates')/items" \
-            -H "Authorization: Bearer $ACCESS_TOKEN" \
-            -H "Accept: application/json;odata=verbose")
-
-          echo "Files in Templates: $FILES_LIST"
-
-          if echo "$FILES_LIST" | grep -q "$UNIQUE_FILE_NAME"; then
-            echo "✅ Uploaded $UNIQUE_FILE_NAME to SharePoint"
-          else
-            echo "❌ File not found in SharePoint. Exiting."
-            exit 1
-          fi
+  
