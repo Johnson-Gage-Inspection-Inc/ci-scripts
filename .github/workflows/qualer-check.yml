@@ -96,7 +96,7 @@ jobs:
                 echo "SKIP_UPLOAD=true" >> $GITHUB_OUTPUT
                 exit 0
               else
-                EXCEL_FILE=$(find . -type f -iname "*.xls*" | head -n 1)
+                EXCEL_FILE=$(find . -type f -iname "*.xl*" | head -n 1)
                 echo "✅ Using Excel file: $EXCEL_FILE"
                 echo "EXCEL_FILE=$EXCEL_FILE" >> $GITHUB_ENV
                 echo "EXCEL_FILE=$EXCEL_FILE" >> $GITHUB_OUTPUT

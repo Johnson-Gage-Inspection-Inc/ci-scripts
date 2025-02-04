@@ -60,7 +60,7 @@ jobs:
               if ! [ -s changed_files.txt ]; then
                 echo "✅ No Excel files changed. Exiting without error."
               else
-                EXCEL_FILE=$(find . -type f -iname "*.xls*" | head -n 1)
+                EXCEL_FILE=$(find . -type f -iname "*.xl*" | head -n 1)
                 echo "✅ Using Excel file: $EXCEL_FILE"
                 echo "EXCEL_FILE=$EXCEL_FILE" >> $GITHUB_OUTPUT
                 echo "UPLOAD=true" >> $GITHUB_OUTPUT
@@ -194,7 +194,7 @@ jobs:
           ACCESS_TOKEN: ${{ env.ACCESS_TOKEN }}
           DRIVE_ID: ${{ env.DRIVE_ID }}
         run: |
-          FILE_PATH="./Book1.xlsx"
+          FILE_PATH="${{ needs.re-validate.outputs.EXCEL_FILE }}"
           FILE_NAME=$(basename "$FILE_PATH")
 
           UPLOAD_URL="https://graph.microsoft.com/v1.0/drives/$DRIVE_ID/root:/$FILE_NAME:/content"
