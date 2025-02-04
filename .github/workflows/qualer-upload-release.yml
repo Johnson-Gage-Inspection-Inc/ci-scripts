@@ -198,7 +198,8 @@ jobs:
           TODAY=$(date +%Y-%m-%d_%H-%M-%S)
           UNIQUE_FILE_NAME="${FILE_NAME%.*}_$TODAY.${FILE_NAME##*.}"
 
-          UPLOAD_URL="https://jgiquality.sharepoint.com/sites/JGI/_api/web/lists/getbytitle('Templates')/RootFolder/Files/Add(url='${UNIQUE_FILE_NAME}',overwrite=true)"
+          SERVER_RELATIVE_URL="/sites/JGI/Templates/$UNIQUE_FILE_NAME"
+          UPLOAD_URL="https://jgiquality.sharepoint.com/_api/web/getfilebyserverrelativeurl('$SERVER_RELATIVE_URL')/content"
 
           RESPONSE=$(curl -X PUT "$UPLOAD_URL" \
             -H "Authorization: Bearer $ACCESS_TOKEN" \
@@ -213,7 +214,7 @@ jobs:
             exit 1
           fi
 
-          FILES_LIST=$(curl -X GET "https://jgiquality.sharepoint.com/sites/JGI/_api/web/lists/getbytitle('Templates')/items" \
+          FILES_LIST=$(curl -X GET "https://jgiquality.sharepoint.com/_api/web/lists/getbytitle('Templates')/items" \
             -H "Authorization: Bearer $ACCESS_TOKEN" \
             -H "Accept: application/json;odata=verbose")
 
