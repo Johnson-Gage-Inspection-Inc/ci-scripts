@@ -197,6 +197,13 @@ jobs:
           FILE_NAME=$(basename "$FILE_PATH")
           TODAY=$(date +%Y-%m-%d_%H-%M-%S)
           UNIQUE_FILE_NAME="${FILE_NAME%.*}_$TODAY.${FILE_NAME##*.}"
+          
+          DRIVE_ID=$(curl -X GET "https://graph.microsoft.com/v1.0/sites/jgiquality.sharepoint.com:/sites/JGI:/drives" \
+            -H "Authorization: Bearer $ACCESS_TOKEN" | jq -r '.value[0].id')
+
+          echo "Drive ID: $DRIVE_ID"
+
+          UPLOAD_URL="https://graph.microsoft.com/v1.0/drives/$DRIVE_ID/root:/Templates/$FILE_NAME:/content"
 
           UPLOAD_URL="https://graph.microsoft.com/v1.0/sites/jgiquality.sharepoint.com:/sites/JGI:/drives/root:/Templates/$FILE_NAME:/content"
 
