@@ -16,15 +16,11 @@ on:
       QUALER_PASSWORD:
         required: true
       SHAREPOINT_CLIENT_ID:
-        required: false
+        required: true
       SHAREPOINT_CLIENT_SECRET:
-        required: false
+        required: true
       SHAREPOINT_TENANT_ID:
-        required: false
-      SHAREPOINT_SITE_URL:
-        required: false
-      SHAREPOINT_DOC_LIB:
-        required: false
+        required: true
 
 jobs:
   validate-excel:
@@ -168,16 +164,12 @@ jobs:
           echo "SHAREPOINT_CLIENT_ID=${SHAREPOINT_CLIENT_ID}"
           echo "SHAREPOINT_CLIENT_SECRET=[HIDDEN]"
           echo "SHAREPOINT_TENANT_ID=${SHAREPOINT_TENANT_ID}"
-          echo "SHAREPOINT_SITE_URL=${SHAREPOINT_SITE_URL}"
-          echo "SHAREPOINT_DOC_LIB=${SHAREPOINT_DOC_LIB}"
 
       - name: Authenticate with SharePoint
         env:
           SHAREPOINT_CLIENT_ID: ${{ secrets.SHAREPOINT_CLIENT_ID }}
           SHAREPOINT_CLIENT_SECRET: ${{ secrets.SHAREPOINT_CLIENT_SECRET }}
           SHAREPOINT_TENANT_ID: ${{ secrets.SHAREPOINT_TENANT_ID }}
-          SHAREPOINT_SITE_URL: ${{ secrets.SHAREPOINT_SITE_URL }}
-          SHAREPOINT_DOC_LIB: ${{ secrets.SHAREPOINT_DOC_LIB }}
         run: |
           TOKEN_RESPONSE=$(curl -s -X POST \
             -d "grant_type=client_credentials" \
@@ -188,5 +180,7 @@ jobs:
 
           ACCESS_TOKEN=$(echo $TOKEN_RESPONSE | jq -r '.access_token')
           echo "ACCESS_TOKEN=$ACCESS_TOKEN" >> $GITHUB_ENV
-          echo "ACCESS_TOKEN=${ACCESS_TOKEN}"
-        
+          if [ -z "$ACCESS_TOKEN" ]; then
+            echo "❌ Failed to authenticate with SharePoint. Exiting with error."
+            exit 1
+          fi
