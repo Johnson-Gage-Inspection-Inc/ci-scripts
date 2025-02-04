@@ -140,3 +140,55 @@ jobs:
         run: |
           gh release upload ${{ env.RELEASE_TAG }} ${{ env.RENAMED_FILE }} \
             --repo "${{ github.repository }}"
+
+  sync-to-sharepoint:
+    needs: re-validate
+    if: needs.re-validate.outputs.UPLOAD == 'true'
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y curl jq
+
+      - name: Authenticate with SharePoint
+        env:
+          SHAREPOINT_CLIENT_ID: ${{ secrets.SHAREPOINT_CLIENT_ID }}
+          SHAREPOINT_CLIENT_SECRET: ${{ secrets.SHAREPOINT_CLIENT_SECRET }}
+          SHAREPOINT_TENANT_ID: ${{ secrets.SHAREPOINT_TENANT_ID }}
+          SHAREPOINT_SITE_URL: ${{ secrets.SHAREPOINT_SITE_URL }}
+          SHAREPOINT_DOC_LIB: ${{ secrets.SHAREPOINT_DOC_LIB }}
+        run: |
+          TOKEN_RESPONSE=$(curl -s -X POST \
+            -d "grant_type=client_credentials" \
+            -d "client_id=${SHAREPOINT_CLIENT_ID}@${SHAREPOINT_TENANT_ID}" \
+            -d "client_secret=${SHAREPOINT_CLIENT_SECRET}" \
+            -d "resource=https://graph.microsoft.com/" \
+            "https://login.microsoftonline.com/${SHAREPOINT_TENANT_ID}/oauth2/token")
+
+          ACCESS_TOKEN=$(echo $TOKEN_RESPONSE | jq -r '.access_token')
+          echo "ACCESS_TOKEN=$ACCESS_TOKEN" >> $GITHUB_ENV
+
+      - name: Upload Excel File to SharePoint
+        env:
+          ACCESS_TOKEN: ${{ env.ACCESS_TOKEN }}
+          SHAREPOINT_SITE_URL: ${{ secrets.SHAREPOINT_SITE_URL }}
+          SHAREPOINT_DOC_LIB: ${{ secrets.SHAREPOINT_DOC_LIB }}
+        run: |
+          FILE_PATH="${{ needs.re-validate.outputs.EXCEL_FILE }}"
+          FILE_NAME=$(basename "$FILE_PATH")
+
+          UPLOAD_URL="${SHAREPOINT_SITE_URL}/_api/web/getfolderbyserverrelativeurl('${SHAREPOINT_DOC_LIB}')/files/add(url='${FILE_NAME}',overwrite=true)"
+
+          curl -X POST "$UPLOAD_URL" \
+            -H "Authorization: Bearer $ACCESS_TOKEN" \
+            -H "Accept: application/json;odata=verbose" \
+            -H "Content-Type: application/json" \
+            --data-binary @"$FILE_PATH"
+
+          echo "✅ Uploaded $FILE_NAME to SharePoint"
+          
