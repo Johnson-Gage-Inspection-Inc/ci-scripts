@@ -199,13 +199,11 @@ jobs:
           UNIQUE_FILE_NAME="${FILE_NAME%.*}_$TODAY.${FILE_NAME##*.}"
           
           DRIVE_ID=$(curl -X GET "https://graph.microsoft.com/v1.0/sites/jgiquality.sharepoint.com:/sites/JGI:/drives" \
-            -H "Authorization: Bearer $ACCESS_TOKEN" | jq -r '.value[0].id')
+            -H "Authorization: Bearer $ACCESS_TOKEN" | jq -r '.value[] | select(.name=="Templates") | .id')
 
           echo "Drive ID: $DRIVE_ID"
 
-          UPLOAD_URL="https://graph.microsoft.com/v1.0/drives/$DRIVE_ID/root:/Templates/$FILE_NAME:/content"
-
-          UPLOAD_URL="https://graph.microsoft.com/v1.0/sites/jgiquality.sharepoint.com:/sites/JGI:/drives/root:/Templates/$FILE_NAME:/content"
+          UPLOAD_URL="https://graph.microsoft.com/v1.0/sites/jgiquality.sharepoint.com:/sites/JGI:/drives/$DRIVE_ID/root:/$FILE_NAME:/content"
 
           RESPONSE=$(curl -X PUT "$UPLOAD_URL" \
             -H "Authorization: Bearer $ACCESS_TOKEN" \
