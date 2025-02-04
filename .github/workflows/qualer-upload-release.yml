@@ -197,13 +197,13 @@ jobs:
           TODAY=$(date +%Y-%m-%d_%H-%M-%S)
           UNIQUE_FILE_NAME="${FILE_NAME%.*}_$TODAY.${FILE_NAME##*.}"
 
-          UPLOAD_URL="https://jgiquality.sharepoint.com/_api/web/GetFolderByServerRelativeUrl('/sites/JGI/Templates')/Files/Add(url='$FILE_NAME',overwrite=true)"
+          UPLOAD_URL="https://graph.microsoft.com/v1.0/sites/jgiquality.sharepoint.com:/sites/JGI:/drives/root:/Templates/$FILE_NAME:/content"
 
-          RESPONSE=$(curl -X POST "$UPLOAD_URL" \
+          RESPONSE=$(curl -X PUT "$UPLOAD_URL" \
             -H "Authorization: Bearer $ACCESS_TOKEN" \
-            -H "Accept: application/json;odata=verbose" \
             -H "Content-Type: application/octet-stream" \
             --data-binary @"$FILE_PATH")
+
 
           echo "SharePoint API Response: $RESPONSE"
 
