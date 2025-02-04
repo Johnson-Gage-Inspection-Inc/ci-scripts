@@ -200,11 +200,11 @@ jobs:
 
           UPLOAD_URL="https://jgiquality.sharepoint.com/_api/web/GetFolderByServerRelativeUrl('/sites/JGI/Templates')/Files/Add(url='$FILE_NAME',overwrite=true)"
 
-          RESPONSE=$(curl -X PUT "$UPLOAD_URL" \
+          RESPONSE=$(curl -X POST "$UPLOAD_URL" \
             -H "Authorization: Bearer $ACCESS_TOKEN" \
             -H "Accept: application/json;odata=verbose" \
             -H "Content-Type: application/octet-stream" \
-            -F "file=@$FILE_PATH")
+            --data-binary @"$FILE_PATH")
 
           echo "SharePoint API Response: $RESPONSE"
 
