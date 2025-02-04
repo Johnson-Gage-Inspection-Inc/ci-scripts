@@ -182,6 +182,10 @@ jobs:
           echo "Token Response: $TOKEN_RESPONSE"  # Debugging step
 
           ACCESS_TOKEN=$(echo $TOKEN_RESPONSE | jq -r '.access_token')
+          if [ "$ACCESS_TOKEN" == "null" ] || [ -z "$ACCESS_TOKEN" ]; then
+            echo "❌ Error: Failed to retrieve access token. Exiting."
+            exit 1
+          fi
           echo "ACCESS_TOKEN=$ACCESS_TOKEN" >> $GITHUB_ENV
           echo "ACCESS_TOKEN=${ACCESS_TOKEN}"
 
@@ -217,7 +221,11 @@ jobs:
 
           echo "SharePoint API Response: $RESPONSE"
 
-          # List all files in the Templates document library for debugging
+          if echo "$RESPONSE" | grep -q 'error'; then
+            echo "❌ Upload failed. Exiting."
+            exit 1
+          fi
+
           FILES_LIST=$(curl -X GET "https://jgiquality.sharepoint.com/sites/JGI/_api/web/lists/getbytitle('Templates')/items" \
             -H "Authorization: Bearer $ACCESS_TOKEN" \
             -H "Accept: application/json;odata=verbose")

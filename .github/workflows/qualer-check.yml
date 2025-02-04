@@ -180,7 +180,7 @@ jobs:
 
           ACCESS_TOKEN=$(echo $TOKEN_RESPONSE | jq -r '.access_token')
           echo "ACCESS_TOKEN=$ACCESS_TOKEN" >> $GITHUB_ENV
-          if [ -z "$ACCESS_TOKEN" ]; then
-            echo "❌ Failed to authenticate with SharePoint. Exiting with error."
+          if [ "$ACCESS_TOKEN" == "null" ] || [ -z "$ACCESS_TOKEN" ]; then
+            echo "❌ Error: Failed to retrieve access token. Exiting."
             exit 1
           fi
