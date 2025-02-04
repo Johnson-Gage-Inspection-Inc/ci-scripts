@@ -198,19 +198,7 @@ jobs:
           TODAY=$(date +%Y-%m-%d_%H-%M-%S)
           UNIQUE_FILE_NAME="${FILE_NAME%.*}_$TODAY.${FILE_NAME##*.}"
           
-          LIST_ID=$(curl -X GET "https://graph.microsoft.com/v1.0/sites/jgiquality.sharepoint.com:/sites/JGI:/lists" \
-            -H "Authorization: Bearer $ACCESS_TOKEN" | jq -r '.value[] | select(.displayName=="Templates") | .id')
-
-          if [ -z "$LIST_ID" ] || [ "$LIST_ID" == "null" ]; then
-            echo "❌ Error: Could not retrieve List ID for Templates. Exiting."
-            exit 1
-          fi
-
-          echo "LIST_ID=$LIST_ID" >> $GITHUB_ENV
-
-          echo "List ID: $LIST_ID"
-
-          UPLOAD_URL="https://graph.microsoft.com/v1.0/sites/jgiquality.sharepoint.com:/sites/JGI:/lists/$LIST_ID/items"
+          UPLOAD_URL="https://graph.microsoft.com/v1.0/sites/jgiquality.sharepoint.com:/sites/JGI:/lists/7BE6C2469B-744B-4397-A913-36C75A90D7B4%7D/items"
 
           RESPONSE=$(curl -X PUT "$UPLOAD_URL" \
             -H "Authorization: Bearer $ACCESS_TOKEN" \
