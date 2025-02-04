@@ -198,8 +198,7 @@ jobs:
           TODAY=$(date +%Y-%m-%d_%H-%M-%S)
           UNIQUE_FILE_NAME="${FILE_NAME%.*}_$TODAY.${FILE_NAME##*.}"
 
-          SERVER_RELATIVE_URL="/sites/JGI/Templates/$UNIQUE_FILE_NAME"
-          UPLOAD_URL="https://jgiquality.sharepoint.com/_api/web/getfilebyserverrelativeurl('$SERVER_RELATIVE_URL')/content"
+          UPLOAD_URL="https://jgiquality.sharepoint.com/_api/web/GetFolderByServerRelativeUrl('/sites/JGI/Templates')/Files/Add(url='$FILE_NAME',overwrite=true)"
 
           RESPONSE=$(curl -X PUT "$UPLOAD_URL" \
             -H "Authorization: Bearer $ACCESS_TOKEN" \
