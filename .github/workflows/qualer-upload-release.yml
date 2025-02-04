@@ -16,11 +16,11 @@ on:
       QUALER_PASSWORD:
         required: true
       SHAREPOINT_CLIENT_ID:
-        required: false
+        required: true
       SHAREPOINT_CLIENT_SECRET:
-        required: false
+        required: true
       SHAREPOINT_TENANT_ID:
-        required: false
+        required: true
 
 jobs:
   re-validate:
@@ -190,14 +190,18 @@ jobs:
         run: |
           FILE_PATH="${{ needs.re-validate.outputs.EXCEL_FILE }}"
           FILE_NAME=$(basename "$FILE_PATH")
+          TODAY=$(date +%Y-%m-%d_%H-%M-%S)
+          UNIQUE_FILE_NAME="${FILE_NAME%.*}_$TODAY.${FILE_NAME##*.}"
 
-          UPLOAD_URL="jgiquality.sharepoint.com/sites/JGI/_api/web/getfolderbyserverrelativeurl('Templates')/files/add(url='${FILE_NAME}',overwrite=true)"
+          UPLOAD_URL="https://jgiquality.sharepoint.com/sites/JGI/_api/web/lists/getbytitle('Templates')/RootFolder/Files/Add(url='${UNIQUE_FILE_NAME}',overwrite=true)"
 
-          curl -X POST "$UPLOAD_URL" \
+          RESPONSE=$(curl -X POST "$UPLOAD_URL" \
             -H "Authorization: Bearer $ACCESS_TOKEN" \
             -H "Accept: application/json;odata=verbose" \
             -H "Content-Type: application/json" \
-            --data-binary @"$FILE_PATH"
+            --data-binary @"$FILE_PATH")
 
-          echo "✅ Uploaded $FILE_NAME to SharePoint"
+          echo "SharePoint Response: $RESPONSE"
+          echo "✅ Uploaded $UNIQUE_FILE_NAME to SharePoint"
+  
           
