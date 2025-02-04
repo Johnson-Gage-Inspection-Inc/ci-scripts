@@ -178,7 +178,7 @@ jobs:
             -d "client_id=${SHAREPOINT_CLIENT_ID}" \
             -d "client_secret=${SHAREPOINT_CLIENT_SECRET}" \
             -d "resource=https://jgiquality.sharepoint.com/" \
-            "https://accounts.accesscontrol.windows.net/${SHAREPOINT_TENANT_ID}/tokens/OAuth/2")
+            "https://login.microsoftonline.com/${SHAREPOINT_TENANT_ID}/oauth2/token")
           echo "Token Response: $TOKEN_RESPONSE"  # Debugging step
 
           ACCESS_TOKEN=$(echo $TOKEN_RESPONSE | jq -r '.access_token')
