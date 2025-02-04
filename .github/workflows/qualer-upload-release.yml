@@ -15,6 +15,16 @@ on:
         required: true
       QUALER_PASSWORD:
         required: true
+      SHAREPOINT_CLIENT_ID:
+        required: false
+      SHAREPOINT_CLIENT_SECRET:
+        required: false
+      SHAREPOINT_TENANT_ID:
+        required: false
+      SHAREPOINT_SITE_URL:
+        required: false
+      SHAREPOINT_DOC_LIB:
+        required: false
 
 jobs:
   re-validate:
@@ -180,6 +190,7 @@ jobs:
 
           ACCESS_TOKEN=$(echo $TOKEN_RESPONSE | jq -r '.access_token')
           echo "ACCESS_TOKEN=$ACCESS_TOKEN" >> $GITHUB_ENV
+          echo "ACCESS_TOKEN=${ACCESS_TOKEN}"
 
       - name: Upload Excel File to SharePoint
         env:
