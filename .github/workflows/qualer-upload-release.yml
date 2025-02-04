@@ -193,7 +193,7 @@ jobs:
           TODAY=$(date +%Y-%m-%d_%H-%M-%S)
           UNIQUE_FILE_NAME="${FILE_NAME%.*}_$TODAY.${FILE_NAME##*.}"
           
-          UPLOAD_URL="https://graph.microsoft.com/v1.0/sites/jgiquality.sharepoint.com:/sites/JGI:/lists/7BE6C2469B-744B-4397-A913-36C75A90D7B4%7D/items"
+          UPLOAD_URL="https://graph.microsoft.com/v1.0/drives/b!E6C2469B-744B-4397-A913-36C75A90D7B4/root:/$FILE_NAME:/content"
 
           RESPONSE=$(curl -X PUT "$UPLOAD_URL" \
             -H "Authorization: Bearer $ACCESS_TOKEN" \
