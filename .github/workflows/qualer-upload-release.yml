@@ -173,12 +173,13 @@ jobs:
           SHAREPOINT_CLIENT_SECRET: ${{ secrets.SHAREPOINT_CLIENT_SECRET }}
           SHAREPOINT_TENANT_ID: ${{ secrets.SHAREPOINT_TENANT_ID }}
         run: |
-          TOKEN_RESPONSE=$(curl -s -X POST \
+          TOKEN_RESPONSE=$(curl -X POST \
             -d "grant_type=client_credentials" \
             -d "client_id=${SHAREPOINT_CLIENT_ID}@${SHAREPOINT_TENANT_ID}" \
             -d "client_secret=${SHAREPOINT_CLIENT_SECRET}" \
             -d "resource=https://graph.microsoft.com/" \
             "https://login.microsoftonline.com/${SHAREPOINT_TENANT_ID}/oauth2/token")
+          echo "Token Response: $TOKEN_RESPONSE"  # Debugging step
 
           ACCESS_TOKEN=$(echo $TOKEN_RESPONSE | jq -r '.access_token')
           echo "ACCESS_TOKEN=$ACCESS_TOKEN" >> $GITHUB_ENV
@@ -195,13 +196,33 @@ jobs:
 
           UPLOAD_URL="https://jgiquality.sharepoint.com/sites/JGI/_api/web/lists/getbytitle('Templates')/RootFolder/Files/Add(url='${UNIQUE_FILE_NAME}',overwrite=true)"
 
+      - name: Upload Excel File to SharePoint
+        env:
+          ACCESS_TOKEN: ${{ env.ACCESS_TOKEN }}
+        run: |
+          FILE_PATH="${{ needs.re-validate.outputs.EXCEL_FILE }}"
+          FILE_NAME=$(basename "$FILE_PATH")
+          TODAY=$(date +%Y-%m-%d_%H-%M-%S)
+          UNIQUE_FILE_NAME="${FILE_NAME%.*}_$TODAY.${FILE_NAME##*.}"
+
+          # Correct SharePoint API URL
+          UPLOAD_URL="https://jgiquality.sharepoint.com/sites/JGI/_api/web/lists/getbytitle('Templates')/RootFolder/Files/Add(url='${UNIQUE_FILE_NAME}',overwrite=true)"
+
+          # Upload file and capture response
           RESPONSE=$(curl -X POST "$UPLOAD_URL" \
             -H "Authorization: Bearer $ACCESS_TOKEN" \
             -H "Accept: application/json;odata=verbose" \
             -H "Content-Type: application/json" \
             --data-binary @"$FILE_PATH")
 
-          echo "SharePoint Response: $RESPONSE"
+          echo "SharePoint API Response: $RESPONSE"
+
+          # List all files in the Templates document library for debugging
+          FILES_LIST=$(curl -X GET "https://jgiquality.sharepoint.com/sites/JGI/_api/web/lists/getbytitle('Templates')/items" \
+            -H "Authorization: Bearer $ACCESS_TOKEN" \
+            -H "Accept: application/json;odata=verbose")
+
+          echo "Files in Templates: $FILES_LIST"
+
           echo "✅ Uploaded $UNIQUE_FILE_NAME to SharePoint"
   
-          
