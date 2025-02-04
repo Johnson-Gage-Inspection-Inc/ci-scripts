@@ -177,9 +177,8 @@ jobs:
             -d "grant_type=client_credentials" \
             -d "client_id=${SHAREPOINT_CLIENT_ID}" \
             -d "client_secret=${SHAREPOINT_CLIENT_SECRET}" \
-            -d "resource=https://jgiquality.sharepoint.com/" \
-            "https://login.microsoftonline.com/${SHAREPOINT_TENANT_ID}/oauth2/token")
-          echo "Token Response: $TOKEN_RESPONSE"  # Debugging step
+            -d "scope=https://graph.microsoft.com/.default" \
+            "https://login.microsoftonline.com/${SHAREPOINT_TENANT_ID}/oauth2/v2.0/token")
 
           ACCESS_TOKEN=$(echo $TOKEN_RESPONSE | jq -r '.access_token')
           if [ "$ACCESS_TOKEN" == "null" ] || [ -z "$ACCESS_TOKEN" ]; then
