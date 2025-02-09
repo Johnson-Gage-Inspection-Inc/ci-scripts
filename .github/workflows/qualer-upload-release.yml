@@ -229,7 +229,7 @@ jobs:
       - name: Rename File with Date
         id: rename
         run: |
-          ORIGINAL_FILE="updated-excel/${{ needs.re-validate.outputs.EXCEL_FILE }}"
+          ORIGINAL_FILE="updated-excel/$(basename ${{ needs.re-validate.outputs.EXCEL_FILE }})"
           if [ -z "$ORIGINAL_FILE" ]; then
             echo "❌ ERROR: ORIGINAL_FILE is empty. Exiting."
             exit 1
