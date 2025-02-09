@@ -257,7 +257,7 @@ jobs:
           path: ${{ steps.rename.outputs.RENAMED_FILE }}
 
   upload-to-qualer:
-    needs: rename-file
+    needs: [re-validate, update-excel-metadata, rename-file]
     if: needs.re-validate.outputs.UPLOAD == 'true'
     runs-on: ubuntu-latest
     steps:
@@ -293,7 +293,7 @@ jobs:
           AUTHOR_NAME: ${{ github.actor }}
 
   create-github-release:
-    needs: rename-file
+    needs: [re-validate, update-excel-metadata, rename-file]
     if: needs.re-validate.outputs.UPLOAD == 'true'
     runs-on: ubuntu-latest
     steps:
@@ -302,7 +302,7 @@ jobs:
 
       - name: Get Release Tag (Current Date)
         id: release-tag
-        run: echo "RELEASE_TAG=$(date +%Y-%m-%d_%H-%M-%S)" >> $GITHUB_ENV
+        run: echo "RELEASE_TAG=$(date +%Y-%m-%d_%H-%M-%S)" >> $GITHUB_OUTPUT
 
       - name: Download Renamed Excel File
         uses: actions/download-artifact@v4
@@ -314,14 +314,14 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release create ${{ env.RELEASE_TAG }} \
+          gh release create ${{ steps.release-tag.outputs.RELEASE_TAG }} \
             --repo "${{ github.repository }}" \
-            --title "Release ${{ env.RELEASE_TAG }}" \
+            --title "Release ${{ steps.release-tag.outputs.RELEASE_TAG }}" \
             --notes "Automated release for commit ${{ env.COMMIT_HASH }} by ${{ github.actor }}."
 
       - name: Upload Renamed Excel File as Release Asset
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release upload ${{ env.RELEASE_TAG }} ${{ needs.rename-file.outputs.RENAMED_FILE }} \
+          gh release upload ${{ steps.release-tag.outputs.RELEASE_TAG }} ${{ needs.rename-file.outputs.RENAMED_FILE }} \
             --repo "${{ github.repository }}"
