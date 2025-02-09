@@ -229,7 +229,6 @@ jobs:
           TODAY=$(date +%Y-%m-%d)
           RENAMED_FILE="${FILE_DIR}/${FILE_BASE}_${TODAY}.${FILE_EXT}"
           mv "$TAGGED_FILE" "$RENAMED_FILE"
-          echo "RENAMED_FILE=$RENAMED_FILE" >> $GITHUB_ENV
           echo "RENAMED_FILE=$RENAMED_FILE" >> $GITHUB_OUTPUT
 
       - name: Upload Renamed Excel File
