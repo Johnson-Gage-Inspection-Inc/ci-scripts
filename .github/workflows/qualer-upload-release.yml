@@ -112,15 +112,13 @@ jobs:
 
           # Read commit hash and tag from environment
           commit_hash = os.getenv("COMMIT_HASH", "UNKNOWN")
-          today = datetime.now().strftime("%Y-%m-%d")
+          tag = "${{ steps.release-tag.outputs.RELEASE_TAG }}"
           company_name = "Johnson Gage & Inspection"
 
           # Set metadata properties
-          metadata.creator = "${{ github.actor }}"
           metadata.lastModifiedBy = "${{ github.actor }}"
-          metadata.created = datetime.now()
           metadata.modified = datetime.now()
-          metadata.version = today
+          metadata.version = tag
           metadata.keywords = commit_hash
 
           # Save metadata and workbook as a new file
@@ -128,7 +126,7 @@ jobs:
           workbook.save(modified_file)
 
           # Confirm metadata was written
-          print(f"✅ Updated Excel Metadata in {modified_file}: Version={today}, Tags={commit_hash}, Company={company_name}")
+          print(f"✅ Updated Excel Metadata in {modified_file}: Version={tag}, Tags={commit_hash}, Company={company_name}")
 
           # Output the new modified file path
           with open(os.environ['GITHUB_ENV'], "a") as f:
