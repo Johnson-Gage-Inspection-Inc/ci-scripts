@@ -66,6 +66,7 @@ jobs:
     outputs:
       EXCEL_FILE: ${{ steps.modify.outputs.EXCEL_FILE }}
       COMMIT_HASH: ${{ steps.commit-hash.outputs.COMMIT_HASH }}
+      RELEASE_TAG: ${{ steps.release-tag.outputs.RELEASE_TAG }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -85,6 +86,10 @@ jobs:
 
       - name: Set clock to central time
         run: sudo timedatectl set-timezone America/Chicago
+
+      - name: Get Release Tag (Current Date)
+        id: release-tag
+        run: echo "RELEASE_TAG=$(date +%Y-%m-%d_%H-%M-%S)" >> $GITHUB_OUTPUT
 
       - name: Update Excel Metadata (Revision, Version, Company)
         id: modify
@@ -277,10 +282,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Get Release Tag (Current Date)
-        id: release-tag
-        run: echo "RELEASE_TAG=$(date +%Y-%m-%d_%H-%M-%S)" >> $GITHUB_OUTPUT
-
       - name: Download Renamed Excel File
         uses: actions/download-artifact@v4
         with:
@@ -291,14 +292,14 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release create ${{ steps.release-tag.outputs.RELEASE_TAG }} \
+          gh release create ${{ needs.update-excel-metadata.outputs.RELEASE_TAG }} \
             --repo "${{ github.repository }}" \
-            --title "Release ${{ steps.release-tag.outputs.RELEASE_TAG }}" \
+            --title "Release ${{ needs.update-excel-metadata.outputs.RELEASE_TAG }}" \
             --notes "Automated release for commit ${{ needs.update-excel-metadata.outputs.COMMIT_HASH }} by ${{ github.actor }}."
 
       - name: Upload Renamed Excel File as Release Asset
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release upload ${{ steps.release-tag.outputs.RELEASE_TAG }} ${{ needs.rename-file.outputs.RENAMED_FILE }} \
+          gh release upload ${{ needs.update-excel-metadata.outputs.RELEASE_TAG }} ${{ needs.rename-file.outputs.RENAMED_FILE }} \
             --repo "${{ github.repository }}"
