@@ -138,10 +138,10 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: updated-excel
-          path: ${{ env.EXCEL_FILE }}
-          
+          path: ${{ steps.modify.outputs.EXCEL_FILE }}
+
   sync-to-sharepoint:
-    needs: re-validate
+    needs: [update-excel-metadata, re-validate]
     if: needs.re-validate.outputs.UPLOAD == 'true'
     runs-on: ubuntu-latest
     steps:
@@ -202,9 +202,9 @@ jobs:
             echo "❌ Upload failed. Exiting."
             exit 1
           fi
-          
+
   rename-file:
-    needs: re-validate
+    needs: [update-excel-metadata, re-validate]
     if: needs.re-validate.outputs.UPLOAD == 'true'
     runs-on: ubuntu-latest
     outputs:
@@ -213,13 +213,18 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Download Modified Excel File
+        uses: actions/download-artifact@v4
+        with:
+          name: updated-excel
+
       - name: Load environment variables
         run: cat ".env" >> $GITHUB_ENV
 
       - name: Rename File with Date
         id: rename
         run: |
-          ORIGINAL_FILE="${{ needs.re-validate.outputs.EXCEL_FILE }}"
+          ORIGINAL_FILE="${{ needs.update-excel-metadata.outputs.EXCEL_FILE }}"
           if [ -z "$ORIGINAL_FILE" ]; then
             echo "❌ ERROR: ORIGINAL_FILE is empty. Exiting."
             exit 1
