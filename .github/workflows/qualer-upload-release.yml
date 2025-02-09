@@ -65,6 +65,81 @@ jobs:
               fi
             fi
 
+  update-excel-metadata:
+    needs: re-validate
+    if: needs.re-validate.outputs.UPLOAD == 'true'
+    runs-on: ubuntu-latest
+    outputs:
+      EXCEL_FILE: ${{ steps.modify.outputs.EXCEL_FILE }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Python dependencies
+        run: pip install openpyxl
+
+      - name: Locate the Identified Excel File
+        run: |
+          echo "EXCEL_FILE=${{ needs.re-validate.outputs.EXCEL_FILE }}" >> $GITHUB_ENV
+
+      - name: Extract Git Commit Info
+        run: |
+          echo "COMMIT_HASH=$(echo $GITHUB_SHA | cut -c1-8)" >> $GITHUB_ENV
+          echo "TAG=${{ github.ref_name }}" >> $GITHUB_ENV
+
+      - name: Update Excel Metadata (Revision, Version, Company)
+        id: modify
+        run: |
+          python <<EOF
+          import openpyxl
+          from datetime import datetime
+          import os
+
+          original_file = os.getenv("EXCEL_FILE", "UNKNOWN")
+          if not os.path.exists(original_file):
+              print(f"❌ ERROR: File not found: {original_file}")
+              exit(1)
+
+          # Define a new file path for the modified file
+          modified_file = os.path.join("/tmp", os.path.basename(original_file))
+
+          workbook = openpyxl.load_workbook(original_file)
+          metadata = workbook.properties
+
+          # Read commit hash and tag from environment
+          commit_hash = os.getenv("COMMIT_HASH", "UNKNOWN")
+          tag = os.getenv("TAG", "UNKNOWN")
+          company_name = "Johnson Gage & Inspection"
+
+          # Set metadata properties
+          metadata.creator = "${{ github.actor }}"
+          metadata.lastModifiedBy = "${{ github.actor }}"
+          metadata.created = datetime.now()
+          metadata.modified = datetime.now()
+          metadata.version = tag  # Git tag as Version
+          metadata.description = f"Tags: {commit_hash}"  # Commit hash under Tags
+
+          # Save metadata and workbook as a new file
+          workbook.properties = metadata
+          workbook.save(modified_file)
+
+          # Confirm metadata was written
+          print(f"✅ Updated Excel Metadata in {modified_file}: Version={tag}, Tags={commit_hash}, Company={company_name}")
+
+          # Output the new modified file path
+          with open(os.environ['GITHUB_ENV'], "a") as f:
+              f.write(f"EXCEL_FILE={modified_file}\n")
+
+          with open(os.environ['GITHUB_OUTPUT'], "a") as f:
+              f.write(f"EXCEL_FILE={modified_file}\n")
+          EOF
+
+      - name: Upload Modified Excel File
+        uses: actions/upload-artifact@v4
+        with:
+          name: updated-excel
+          path: ${{ env.EXCEL_FILE }}
+          
   sync-to-sharepoint:
     needs: re-validate
     if: needs.re-validate.outputs.UPLOAD == 'true'
