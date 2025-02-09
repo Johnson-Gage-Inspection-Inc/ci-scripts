@@ -121,7 +121,7 @@ jobs:
         run: chmod +x ./ci-scripts/upload_sop.sh
 
       - name: Download Renamed Excel File
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: renamed-excel
 
@@ -147,7 +147,7 @@ jobs:
         run: echo "RELEASE_TAG=$(date +%Y-%m-%d_%H-%M-%S)" >> $GITHUB_ENV
 
       - name: Download Renamed Excel File
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: renamed-excel
 
