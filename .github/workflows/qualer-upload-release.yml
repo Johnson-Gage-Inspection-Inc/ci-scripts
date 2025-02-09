@@ -71,7 +71,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       EXCEL_FILE: ${{ steps.modify.outputs.EXCEL_FILE }}
-      COMMIT_HASH: ${{ steps.modify.outputs.COMMIT_HASH }}
+      COMMIT_HASH: ${{ steps.commit-hash.outputs.COMMIT_HASH }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -84,6 +84,7 @@ jobs:
           echo "EXCEL_FILE=${{ needs.re-validate.outputs.EXCEL_FILE }}" >> $GITHUB_ENV
 
       - name: Extract Git Commit Info
+        id: commit-hash
         run: |
           echo "COMMIT_HASH=$(echo $GITHUB_SHA | cut -c1-8)" >> $GITHUB_ENV
           echo "COMMIT_HASH=$(echo $GITHUB_SHA | cut -c1-8)" >> $GITHUB_OUTPUT
@@ -314,7 +315,7 @@ jobs:
           gh release create ${{ steps.release-tag.outputs.RELEASE_TAG }} \
             --repo "${{ github.repository }}" \
             --title "Release ${{ steps.release-tag.outputs.RELEASE_TAG }}" \
-            --notes "Automated release for commit ${{ env.COMMIT_HASH }} by ${{ github.actor }}."
+            --notes "Automated release for commit ${{ needs.update-excel-metadata.outputs.COMMIT_HASH }} by ${{ github.actor }}."
 
       - name: Upload Renamed Excel File as Release Asset
         env:
