@@ -223,14 +223,13 @@ jobs:
 
       - name: Debug
         run: |
-          echo "EXCEL_FILE=${{ needs.update-excel-metadata.outputs.EXCEL_FILE }}"
-          echo "updated-excel/${{ env.EXCEL_FILE }}"
-          echo ls -l
+          echo "updated-excel/${{ needs.re-validate.outputs.EXCEL_FILE }}"
+          echo $(ls -la)
 
       - name: Rename File with Date
         id: rename
         run: |
-          ORIGINAL_FILE="${{ needs.update-excel-metadata.outputs.EXCEL_FILE }}"
+          ORIGINAL_FILE="updated-excel/${{ needs.re-validate.outputs.EXCEL_FILE }}"
           if [ -z "$ORIGINAL_FILE" ]; then
             echo "❌ ERROR: ORIGINAL_FILE is empty. Exiting."
             exit 1
