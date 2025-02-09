@@ -65,108 +65,6 @@ jobs:
               fi
             fi
 
-  rename-file:
-    needs: re-validate
-    if: needs.re-validate.outputs.UPLOAD == 'true'
-    runs-on: ubuntu-latest
-    outputs:
-      RENAMED_FILE: ${{ steps.rename.outputs.RENAMED_FILE }}
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Load environment variables
-        run: cat ".env" >> $GITHUB_ENV
-
-      - name: Rename File with Date
-        id: rename
-        run: |
-          ORIGINAL_FILE="${{ needs.re-validate.outputs.EXCEL_FILE }}"
-          FILE_DIR=$(dirname "$ORIGINAL_FILE")
-          FILE_NAME=$(basename "$ORIGINAL_FILE")
-          FILE_BASE="${FILE_NAME%.*}"
-          FILE_EXT="${FILE_NAME##*.}"
-          TODAY=$(date +%Y-%m-%d)
-          RENAMED_FILE="${FILE_DIR}/${FILE_BASE}_${TODAY}.${FILE_EXT}"
-          mv "$ORIGINAL_FILE" "$RENAMED_FILE"
-          echo "RENAMED_FILE=$RENAMED_FILE" >> $GITHUB_ENV
-          echo "RENAMED_FILE=$RENAMED_FILE" >> $GITHUB_OUTPUT
-
-      - name: Upload Renamed Excel File
-        uses: actions/upload-artifact@v4
-        with:
-          name: renamed-excel
-          path: ${{ steps.rename.outputs.RENAMED_FILE }}
-
-  upload-to-qualer:
-    needs: [re-validate, rename-file]
-    if: needs.re-validate.outputs.UPLOAD == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Checkout `ci-scripts` Repository
-        uses: actions/checkout@v3
-        with:
-          repository: Johnson-Gage-Inspection-Inc/ci-scripts
-          path: ci-scripts
-          token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Get Short Commit Hash
-        id: get-commit-hash
-        run: echo "COMMIT_HASH=$(echo $GITHUB_SHA | cut -c1-8)" >> $GITHUB_ENV
-
-      - name: Ensure `upload_sop.sh` is Executable
-        run: chmod +x ./ci-scripts/upload_sop.sh
-
-      - name: Download Renamed Excel File
-        uses: actions/download-artifact@v4
-        with:
-          name: renamed-excel
-
-      - name: Run Upload Script
-        run: ./ci-scripts/upload_sop.sh
-        env:
-          QUALER_EMAIL: ${{ secrets.QUALER_EMAIL }}
-          QUALER_PASSWORD: ${{ secrets.QUALER_PASSWORD }}
-          EXCEL_FILE: renamed-excel/*.xlsx
-          COMMIT_HASH: ${{ env.COMMIT_HASH }}
-          AUTHOR_NAME: ${{ github.actor }}
-
-  create-github-release:
-    needs: [re-validate, rename-file]
-    if: needs.re-validate.outputs.UPLOAD == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Get Release Tag (Current Date)
-        id: release-tag
-        run: echo "RELEASE_TAG=$(date +%Y-%m-%d_%H-%M-%S)" >> $GITHUB_ENV
-
-      - name: Download Renamed Excel File
-        uses: actions/download-artifact@v4
-        with:
-          name: renamed-excel
-
-      - name: Create GitHub Release
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          gh release create ${{ env.RELEASE_TAG }} \
-            --repo "${{ github.repository }}" \
-            --title "Release ${{ env.RELEASE_TAG }}" \
-            --notes "Automated release for commit ${{ env.COMMIT_HASH }} by ${{ github.actor }}."
-
-      - name: Upload Renamed Excel File as Release Asset
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          gh release upload ${{ env.RELEASE_TAG }} ${{ env.RENAMED_FILE }} \
-            --repo "${{ github.repository }}"
-
   sync-to-sharepoint:
     needs: re-validate
     if: needs.re-validate.outputs.UPLOAD == 'true'
@@ -229,3 +127,109 @@ jobs:
             echo "❌ Upload failed. Exiting."
             exit 1
           fi
+          
+  rename-file:
+    needs: re-validate
+    if: needs.re-validate.outputs.UPLOAD == 'true'
+    runs-on: ubuntu-latest
+    outputs:
+      RENAMED_FILE: ${{ steps.rename.outputs.RENAMED_FILE }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Load environment variables
+        run: cat ".env" >> $GITHUB_ENV
+
+      - name: Rename File with Date
+        id: rename
+        run: |
+          ORIGINAL_FILE="${{ needs.re-validate.outputs.EXCEL_FILE }}"
+          if [ -z "$ORIGINAL_FILE" ]; then
+            echo "❌ ERROR: ORIGINAL_FILE is empty. Exiting."
+            exit 1
+          fi
+          FILE_DIR=$(dirname "$ORIGINAL_FILE")
+          FILE_NAME=$(basename "$ORIGINAL_FILE")
+          FILE_BASE="${FILE_NAME%.*}"
+          FILE_EXT="${FILE_NAME##*.}"
+          TODAY=$(date +%Y-%m-%d)
+          RENAMED_FILE="${FILE_DIR}/${FILE_BASE}_${TODAY}.${FILE_EXT}"
+          mv "$ORIGINAL_FILE" "$RENAMED_FILE"
+          echo "RENAMED_FILE=$RENAMED_FILE" >> $GITHUB_ENV
+          echo "RENAMED_FILE=$RENAMED_FILE" >> $GITHUB_OUTPUT
+
+      - name: Upload Renamed Excel File
+        uses: actions/upload-artifact@v4
+        with:
+          name: renamed-excel
+          path: ${{ steps.rename.outputs.RENAMED_FILE }}
+
+  upload-to-qualer:
+    needs: rename-file
+    if: needs.re-validate.outputs.UPLOAD == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Checkout `ci-scripts` Repository
+        uses: actions/checkout@v3
+        with:
+          repository: Johnson-Gage-Inspection-Inc/ci-scripts
+          path: ci-scripts
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Get Short Commit Hash
+        id: get-commit-hash
+        run: echo "COMMIT_HASH=$(echo $GITHUB_SHA | cut -c1-8)" >> $GITHUB_ENV
+
+      - name: Ensure `upload_sop.sh` is Executable
+        run: chmod +x ./ci-scripts/upload_sop.sh
+
+      - name: Download Renamed Excel File
+        uses: actions/download-artifact@v4
+        with:
+          name: renamed-excel
+
+      - name: Run Upload Script
+        run: ./ci-scripts/upload_sop.sh
+        env:
+          QUALER_EMAIL: ${{ secrets.QUALER_EMAIL }}
+          QUALER_PASSWORD: ${{ secrets.QUALER_PASSWORD }}
+          EXCEL_FILE: renamed-excel/*.xlsx
+          COMMIT_HASH: ${{ env.COMMIT_HASH }}
+          AUTHOR_NAME: ${{ github.actor }}
+
+  create-github-release:
+    needs: rename-file
+    if: needs.re-validate.outputs.UPLOAD == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Get Release Tag (Current Date)
+        id: release-tag
+        run: echo "RELEASE_TAG=$(date +%Y-%m-%d_%H-%M-%S)" >> $GITHUB_ENV
+
+      - name: Download Renamed Excel File
+        uses: actions/download-artifact@v4
+        with:
+          name: renamed-excel
+
+      - name: Create GitHub Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create ${{ env.RELEASE_TAG }} \
+            --repo "${{ github.repository }}" \
+            --title "Release ${{ env.RELEASE_TAG }}" \
+            --notes "Automated release for commit ${{ env.COMMIT_HASH }} by ${{ github.actor }}."
+
+      - name: Upload Renamed Excel File as Release Asset
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release upload ${{ env.RELEASE_TAG }} ${{ env.RENAMED_FILE }} \
+            --repo "${{ github.repository }}"
