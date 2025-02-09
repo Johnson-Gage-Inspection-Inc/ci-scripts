@@ -33,9 +33,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Fetch remote branch
-        run: git fetch origin ${{ inputs.branch }}
-
       - name: Capture Excel File Changes
         id: capture_changes
         run: |
