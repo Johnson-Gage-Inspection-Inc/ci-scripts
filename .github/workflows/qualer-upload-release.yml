@@ -174,11 +174,6 @@ jobs:
           echo "ACCESS_TOKEN=$ACCESS_TOKEN" >> $GITHUB_ENV
           echo "ACCESS_TOKEN=${ACCESS_TOKEN}"
 
-      - name: Set SharePoint Drive ID Manually
-        run: |
-          DRIVE_ID="b!62zY21rTlkyTbN2E9veLub0A9-qfsQ1LmVs-siAwkjUpikiIFZhHTb5VFJuc7Xng"
-          echo "DRIVE_ID=$DRIVE_ID" >> $GITHUB_ENV
-  
       - name: Upload Excel File to SharePoint
         env:
           ACCESS_TOKEN: ${{ env.ACCESS_TOKEN }}
