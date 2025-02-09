@@ -93,7 +93,7 @@ jobs:
           echo "RENAMED_FILE=$RENAMED_FILE" >> $GITHUB_OUTPUT
 
       - name: Upload Renamed Excel File
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: renamed-excel
           path: ${{ steps.rename.outputs.RENAMED_FILE }}
