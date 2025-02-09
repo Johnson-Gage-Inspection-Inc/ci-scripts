@@ -87,6 +87,9 @@ jobs:
           echo "COMMIT_HASH=$(echo $GITHUB_SHA | cut -c1-8)" >> $GITHUB_ENV
           echo "TAG=${{ github.ref_name }}" >> $GITHUB_ENV
 
+      - name: Set clock to central time
+        run: sudo timedatectl set-timezone America/Chicago
+
       - name: Update Excel Metadata (Revision, Version, Company)
         id: modify
         run: |
@@ -108,7 +111,7 @@ jobs:
 
           # Read commit hash and tag from environment
           commit_hash = os.getenv("COMMIT_HASH", "UNKNOWN")
-          today = datetime.now().astimezone().astimezone(datetime.timezone(datetime.timedelta(hours=-6))).strftime("%Y-%m-%d")
+          today = datetime.now().strftime("%Y-%m-%d")
           company_name = "Johnson Gage & Inspection"
 
           # Set metadata properties
@@ -124,7 +127,7 @@ jobs:
           workbook.save(modified_file)
 
           # Confirm metadata was written
-          print(f"✅ Updated Excel Metadata in {modified_file}: Version={tag}, Tags={commit_hash}, Company={company_name}")
+          print(f"✅ Updated Excel Metadata in {modified_file}: Version={today}, Tags={commit_hash}, Company={company_name}")
 
           # Output the new modified file path
           with open(os.environ['GITHUB_ENV'], "a") as f:
@@ -215,6 +218,9 @@ jobs:
     outputs:
       RENAMED_FILE: ${{ steps.rename.outputs.RENAMED_FILE }}
     steps:
+      - name: Set clock to central time
+        run: sudo timedatectl set-timezone America/Chicago
+
       - name: Checkout repository
         uses: actions/checkout@v4
 
