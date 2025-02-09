@@ -23,9 +23,6 @@ if [ ! -f "$EXCEL_FILE" ]; then
   exit 1
 fi
 
-mv "$EXCEL_FILE" "$EXCEL_FILE" || exit 7
-echo "✅ File renamed to: $EXCEL_FILE"
-
 # Ensure there's a file there
 if [ ! -f "$EXCEL_FILE" ]; then
   echo "❌ File not found: $EXCEL_FILE"
