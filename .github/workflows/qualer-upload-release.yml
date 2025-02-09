@@ -108,7 +108,7 @@ jobs:
 
           # Read commit hash and tag from environment
           commit_hash = os.getenv("COMMIT_HASH", "UNKNOWN")
-          tag = os.getenv("TAG", "UNKNOWN")
+          today = datetime.now().astimezone().astimezone(datetime.timezone(datetime.timedelta(hours=-6))).strftime("%Y-%m-%d")
           company_name = "Johnson Gage & Inspection"
 
           # Set metadata properties
@@ -116,8 +116,8 @@ jobs:
           metadata.lastModifiedBy = "${{ github.actor }}"
           metadata.created = datetime.now()
           metadata.modified = datetime.now()
-          metadata.version = tag  # Git tag as Version
-          metadata.description = f"Tags: {commit_hash}"  # Commit hash under Tags
+          metadata.version = today
+          metadata.keywords = commit_hash
 
           # Save metadata and workbook as a new file
           workbook.properties = metadata
@@ -147,6 +147,11 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Overwrite with Updated Excel File
+        uses: actions/download-artifact@v4
+        with:
+          name: updated-excel
 
       - name: Debug
         run: |
