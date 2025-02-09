@@ -71,6 +71,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       EXCEL_FILE: ${{ steps.modify.outputs.EXCEL_FILE }}
+      COMMIT_HASH: ${{ steps.modify.outputs.COMMIT_HASH }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -271,10 +272,6 @@ jobs:
           path: ci-scripts
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Get Short Commit Hash
-        id: get-commit-hash
-        run: echo "COMMIT_HASH=$(echo $GITHUB_SHA | cut -c1-8)" >> $GITHUB_ENV
-
       - name: Ensure `upload_sop.sh` is Executable
         run: chmod +x ./ci-scripts/upload_sop.sh
 
@@ -289,7 +286,7 @@ jobs:
           QUALER_EMAIL: ${{ secrets.QUALER_EMAIL }}
           QUALER_PASSWORD: ${{ secrets.QUALER_PASSWORD }}
           EXCEL_FILE: ${{ needs.rename-file.outputs.RENAMED_FILE }}
-          COMMIT_HASH: ${{ env.COMMIT_HASH }}
+          COMMIT_HASH: ${{ needs.update-excel-metadata.outputs.COMMIT_HASH }}
           AUTHOR_NAME: ${{ github.actor }}
 
   create-github-release:
