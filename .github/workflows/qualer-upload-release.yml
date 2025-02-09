@@ -213,7 +213,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Download Modified Excel File
+      - name: Overwrite with Updated Excel File
         uses: actions/download-artifact@v4
         with:
           name: updated-excel
@@ -221,26 +221,21 @@ jobs:
       - name: Load environment variables
         run: cat ".env" >> $GITHUB_ENV
 
-      - name: Debug
-        run: |
-          echo "updated-excel/${{ needs.re-validate.outputs.EXCEL_FILE }}"
-          echo $(ls -la)
-
       - name: Rename File with Date
         id: rename
         run: |
-          ORIGINAL_FILE="updated-excel/$(basename ${{ needs.re-validate.outputs.EXCEL_FILE }})"
-          if [ -z "$ORIGINAL_FILE" ]; then
-            echo "❌ ERROR: ORIGINAL_FILE is empty. Exiting."
+          TAGGED_FILE="${{ needs.re-validate.outputs.EXCEL_FILE }}"
+          if [ -z "$TAGGED_FILE" ]; then
+            echo "❌ ERROR: TAGGED_FILE is empty. Exiting."
             exit 1
           fi
-          FILE_DIR=$(dirname "$ORIGINAL_FILE")
-          FILE_NAME=$(basename "$ORIGINAL_FILE")
+          FILE_DIR=$(dirname "$TAGGED_FILE")
+          FILE_NAME=$(basename "$TAGGED_FILE")
           FILE_BASE="${FILE_NAME%.*}"
           FILE_EXT="${FILE_NAME##*.}"
           TODAY=$(date +%Y-%m-%d)
           RENAMED_FILE="${FILE_DIR}/${FILE_BASE}_${TODAY}.${FILE_EXT}"
-          mv "$ORIGINAL_FILE" "$RENAMED_FILE"
+          mv "$TAGGED_FILE" "$RENAMED_FILE"
           echo "RENAMED_FILE=$RENAMED_FILE" >> $GITHUB_ENV
           echo "RENAMED_FILE=$RENAMED_FILE" >> $GITHUB_OUTPUT
 
