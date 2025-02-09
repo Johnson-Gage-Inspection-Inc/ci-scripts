@@ -34,9 +34,7 @@ jobs:
         uses: actions/checkout@v4
   
       - name: Load environment variables
-        run: |
-          echo "Loading environment variables from .env"
-          cat ".env" >> $GITHUB_ENV
+        run: cat ".env" >> $GITHUB_ENV
 
       - name: Fetch remote branch
         run: git fetch origin ${{ inputs.branch }}
@@ -67,19 +65,44 @@ jobs:
               fi
             fi
 
+  rename-file:
+    runs-on: ubuntu-latest
+    outputs:
+      RENAMED_FILE: ${{ steps.rename.outputs.RENAMED_FILE }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Load environment variables
+        run: cat ".env" >> $GITHUB_ENV
+
+      - name: Rename File with Date
+        id: rename
+        run: |
+          ORIGINAL_FILE="${{ needs.re-validate.outputs.EXCEL_FILE }}"
+          FILE_DIR=$(dirname "$ORIGINAL_FILE")
+          FILE_NAME=$(basename "$ORIGINAL_FILE")
+          FILE_BASE="${FILE_NAME%.*}"
+          FILE_EXT="${FILE_NAME##*.}"
+          TODAY=$(date +%Y-%m-%d)
+          RENAMED_FILE="${FILE_DIR}/${FILE_BASE}_${TODAY}.${FILE_EXT}"
+          mv "$ORIGINAL_FILE" "$RENAMED_FILE"
+          echo "RENAMED_FILE=$RENAMED_FILE" >> $GITHUB_ENV
+          echo "RENAMED_FILE=$RENAMED_FILE" >> $GITHUB_OUTPUT
+
+      - name: Upload Renamed Excel File
+        uses: actions/upload-artifact@v3
+        with:
+          name: renamed-excel
+          path: ${{ steps.rename.outputs.RENAMED_FILE }}
+
   upload-to-qualer:
-    needs: re-validate
+    needs: [re-validate, rename-file]
     if: needs.re-validate.outputs.UPLOAD == 'true'
     runs-on: ubuntu-latest
     steps:
-
       - name: Checkout code
         uses: actions/checkout@v4
-  
-      - name: Load environment variables
-        run: |
-          echo "Loading environment variables from .env"
-          cat ".env" >> $GITHUB_ENV
 
       - name: Checkout `ci-scripts` Repository
         uses: actions/checkout@v3
@@ -95,21 +118,25 @@ jobs:
       - name: Ensure `upload_sop.sh` is Executable
         run: chmod +x ./ci-scripts/upload_sop.sh
 
+      - name: Download Renamed Excel File
+        uses: actions/download-artifact@v3
+        with:
+          name: renamed-excel
+
       - name: Run Upload Script
         run: ./ci-scripts/upload_sop.sh
         env:
           QUALER_EMAIL: ${{ secrets.QUALER_EMAIL }}
           QUALER_PASSWORD: ${{ secrets.QUALER_PASSWORD }}
-          EXCEL_FILE: ${{ needs.re-validate.outputs.EXCEL_FILE }}
+          EXCEL_FILE: ${{ env.RENAMED_FILE }}
           COMMIT_HASH: ${{ env.COMMIT_HASH }}
           AUTHOR_NAME: ${{ github.actor }}
 
   create-github-release:
-    needs: re-validate
+    needs: [re-validate, rename-file]
     if: needs.re-validate.outputs.UPLOAD == 'true'
     runs-on: ubuntu-latest
     steps:
-
       - name: Checkout code
         uses: actions/checkout@v4
 
@@ -117,19 +144,10 @@ jobs:
         id: release-tag
         run: echo "RELEASE_TAG=$(date +%Y-%m-%d_%H-%M-%S)" >> $GITHUB_ENV
 
-      - name: Copy Excel File with Date Suffix
-        id: copy-excel
-        run: |
-          ORIGINAL_FILE="${{ needs.re-validate.outputs.EXCEL_FILE }}"
-          FILE_DIR=$(dirname "$ORIGINAL_FILE")
-          FILE_NAME=$(basename "$ORIGINAL_FILE")
-          FILE_BASE="${FILE_NAME%.*}"
-          FILE_EXT="${FILE_NAME##*.}"
-          TODAY=$(date +%Y-%m-%d)
-          RENAMED_FILE="${FILE_DIR}/${FILE_BASE}_${TODAY}.${FILE_EXT}"
-          cp "$ORIGINAL_FILE" "$RENAMED_FILE"
-          echo "RENAMED_FILE=$RENAMED_FILE" >> $GITHUB_ENV
-          echo "✅ Copied file to: $RENAMED_FILE"
+      - name: Download Renamed Excel File
+        uses: actions/download-artifact@v3
+        with:
+          name: renamed-excel
 
       - name: Create GitHub Release
         env:
@@ -140,7 +158,7 @@ jobs:
             --title "Release ${{ env.RELEASE_TAG }}" \
             --notes "Automated release for commit ${{ env.COMMIT_HASH }} by ${{ github.actor }}."
 
-      - name: Upload Copied Excel File as Release Asset
+      - name: Upload Renamed Excel File as Release Asset
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -152,7 +170,6 @@ jobs:
     if: needs.re-validate.outputs.UPLOAD == 'true'
     runs-on: ubuntu-latest
     steps:
-
       - name: Checkout code
         uses: actions/checkout@v4
 
