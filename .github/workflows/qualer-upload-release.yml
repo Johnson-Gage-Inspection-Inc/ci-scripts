@@ -66,6 +66,8 @@ jobs:
             fi
 
   rename-file:
+    needs: re-validate
+    if: needs.re-validate.outputs.UPLOAD == 'true'
     runs-on: ubuntu-latest
     outputs:
       RENAMED_FILE: ${{ steps.rename.outputs.RENAMED_FILE }}
