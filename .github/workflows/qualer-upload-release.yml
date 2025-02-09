@@ -197,7 +197,7 @@ jobs:
         env:
           QUALER_EMAIL: ${{ secrets.QUALER_EMAIL }}
           QUALER_PASSWORD: ${{ secrets.QUALER_PASSWORD }}
-          EXCEL_FILE: renamed-excel/*.xlsx
+          EXCEL_FILE: ${{ needs.rename-file.outputs.RENAMED_FILE }}
           COMMIT_HASH: ${{ env.COMMIT_HASH }}
           AUTHOR_NAME: ${{ github.actor }}
 
