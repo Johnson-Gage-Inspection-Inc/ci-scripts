@@ -232,5 +232,5 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release upload ${{ env.RELEASE_TAG }} ${{ env.RENAMED_FILE }} \
+          gh release upload ${{ env.RELEASE_TAG }} ${{ needs.rename-file.outputs.RENAMED_FILE }} \
             --repo "${{ github.repository }}"
