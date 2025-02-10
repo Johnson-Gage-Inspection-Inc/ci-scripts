@@ -294,11 +294,14 @@ jobs:
             if [[ -z "$PR_BODY" ]]; then
               echo "⚠️ PR found, but no description available. Using commit message."
             fi
+            # Escape newlines and special characters
+            PR_BODY_ESCAPED=$(echo "$PR_BODY" | jq -R -s '.')
             echo "✅ PR Body Retrieved."
-            echo "pr_body=\"$PR_BODY\"" >> $GITHUB_OUTPUT
+            echo "pr_body=$PR_BODY_ESCAPED" >> $GITHUB_OUTPUT
           fi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  
 
       - name: Get Latest Commit Message
         id: commit_message
