@@ -80,9 +80,7 @@ jobs:
 
       - name: Extract Git Commit Info
         id: commit-hash
-        run: |
-          echo "COMMIT_HASH=$(echo $GITHUB_SHA | cut -c1-8)" >> $GITHUB_ENV
-          echo "COMMIT_HASH=$(echo $GITHUB_SHA | cut -c1-8)" >> $GITHUB_OUTPUT
+        run: echo "COMMIT_HASH=$(echo $GITHUB_SHA | cut -c1-8)" >> $GITHUB_OUTPUT
 
       - name: Set clock to central time
         run: sudo timedatectl set-timezone America/Chicago
@@ -111,7 +109,7 @@ jobs:
           metadata = workbook.properties
 
           # Read commit hash and tag from environment
-          commit_hash = os.getenv("COMMIT_HASH", "UNKNOWN")
+          commit_hash = "${{ steps.commit-hash.outputs.COMMIT_HASH }}"
           tag = "${{ steps.release-tag.outputs.RELEASE_TAG }}"
           company_name = "Johnson Gage & Inspection"
 
