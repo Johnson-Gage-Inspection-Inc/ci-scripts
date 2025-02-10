@@ -295,7 +295,7 @@ jobs:
               echo "⚠️ PR found, but no description available. Using commit message."
             fi
             echo "✅ PR Body Retrieved."
-            echo "pr_body=$PR_BODY" >> $GITHUB_OUTPUT
+            echo "pr_body=\"$PR_BODY\"" >> $GITHUB_OUTPUT
           fi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
