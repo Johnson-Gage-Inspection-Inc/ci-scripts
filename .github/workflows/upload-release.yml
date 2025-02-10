@@ -297,5 +297,5 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release upload ${{ needs.update-excel-metadata.outputs.RELEASE_TAG }} ${{ needs.rename-file.outputs.RENAMED_FILE }} \
+          gh release upload ${{ needs.update-excel-metadata.outputs.RELEASE_TAG }} "${{ needs.rename-file.outputs.RENAMED_FILE }}" \
             --repo "${{ github.repository }}"
