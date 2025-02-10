@@ -80,7 +80,7 @@ jobs:
 
       - name: Extract Git Commit Info
         id: commit-hash
-        run: echo "COMMIT_HASH=$(echo $GITHUB_SHA | cut -c1-8)" >> $GITHUB_OUTPUT
+        run: echo "COMMIT_HASH=$(echo $GITHUB_SHA | cut -c1-7)" >> $GITHUB_OUTPUT
 
       - name: Set clock to central time
         run: sudo timedatectl set-timezone America/Chicago
