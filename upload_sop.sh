@@ -23,12 +23,6 @@ if [ ! -f "$EXCEL_FILE" ]; then
   exit 1
 fi
 
-# Ensure there's a file there
-if [ ! -f "$EXCEL_FILE" ]; then
-  echo "❌ File not found: $EXCEL_FILE"
-  exit 1
-fi
-
 echo "ℹ️ Uploading file: $EXCEL_FILE"
 
 status_code=$(curl -s -w "%{http_code}" -o tmp/upload_response.json "https://jgiquality.qualer.com/Sop/SaveSopFile" \
