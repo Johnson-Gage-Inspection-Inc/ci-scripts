@@ -87,7 +87,7 @@ jobs:
 
       - name: Get Release Tag (Current Date)
         id: release-tag
-        run: echo "RELEASE_TAG=$(date +%Y-%m-%d_%H-%M-%S)" >> $GITHUB_OUTPUT
+        run: echo "RELEASE_TAG=$(date +%Y-%m-%d)" >> $GITHUB_OUTPUT
 
       - name: Update Excel Metadata (Revision, Version, Company)
         id: modify
