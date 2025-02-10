@@ -227,8 +227,8 @@ jobs:
           FILE_NAME=$(basename "$TAGGED_FILE")
           FILE_BASE="${FILE_NAME%.*}"
           FILE_EXT="${FILE_NAME##*.}"
-          TODAY=$(date +%Y-%m-%d)
-          RENAMED_FILE="${FILE_DIR}/${FILE_BASE}_${TODAY}.${FILE_EXT}"
+          TODAY=$(date +%m-%d-%Y)
+          RENAMED_FILE="${FILE_DIR}/${FILE_BASE} ${TODAY}.${FILE_EXT}"
           mv "$TAGGED_FILE" "$RENAMED_FILE"
           echo "RENAMED_FILE=$RENAMED_FILE" >> $GITHUB_OUTPUT
 
