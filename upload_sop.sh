@@ -34,7 +34,7 @@ status_code=$(curl -s -w "%{http_code}" -o tmp/upload_response.json "https://jgi
     -H "Referer: https://jgiquality.qualer.com/Sop/Sop?sopId=$SOP_ID" \
     -F "documents=@\"$EXCEL_FILE\";type=application/vnd.ms-excel.sheet.macroEnabled.12" \
     -F "sopId=$SOP_ID" \
-    -F "__RequestVerificationToken=$csrf_token_value")
+    -F "__RequestVerificationToken=$csrf_token_value") || echo "Curl failed with exit code $?"
 
 cat tmp/upload_response.json
 
