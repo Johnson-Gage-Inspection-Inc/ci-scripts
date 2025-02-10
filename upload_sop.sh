@@ -32,7 +32,7 @@ status_code=$(curl -s -w "%{http_code}" -o tmp/upload_response.json "https://jgi
     -H "Accept: */*" \
     -H "X-Requested-With: XMLHttpRequest" \
     -H "Referer: https://jgiquality.qualer.com/Sop/Sop?sopId=$SOP_ID" \
-    -F "documents=@$EXCEL_FILE;type=application/vnd.ms-excel.sheet.macroEnabled.12" \
+    -F "documents=@\"$EXCEL_FILE\";type=application/vnd.ms-excel.sheet.macroEnabled.12" \
     -F "sopId=$SOP_ID" \
     -F "__RequestVerificationToken=$csrf_token_value")
 
@@ -86,7 +86,7 @@ status_code=$(curl 'https://jgiquality.qualer.com/Sop/Sop' \
   -H 'sec-fetch-site: same-origin' \
   -H 'user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/132.0.0.0 Safari/537.36 Edg/132.0.0.0' \
   -H 'x-requested-with: XMLHttpRequest' \
-  --data-raw "SopId=$SOP_ID&SopTypeId=1544&AttachmentName=$EXCEL_FILE&SopTypeName=Approved+Software&title=$DOC_TITLE&code=$DOC_ID&EffectiveDate=$current_date&revision=$COMMIT_HASH&author=$AUTHOR_NAME&details=$DOC_DETAILS&__RequestVerificationToken=$csrf_token_value")
+  --data-raw "SopId=$SOP_ID&SopTypeId=1544&AttachmentName=\"$EXCEL_FILE\"&SopTypeName=Approved+Software&title=$DOC_TITLE&code=$DOC_ID&EffectiveDate=$current_date&revision=$COMMIT_HASH&author=$AUTHOR_NAME&details=$DOC_DETAILS&__RequestVerificationToken=$csrf_token_value")
 
 cat tmp/update_response.json
 echo \
