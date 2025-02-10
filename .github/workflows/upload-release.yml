@@ -114,8 +114,6 @@ jobs:
           company_name = "Johnson Gage & Inspection"
 
           # Set metadata properties
-          metadata.lastModifiedBy = "${{ github.actor }}"
-          metadata.modified = datetime.now()
           metadata.version = tag
           metadata.keywords = commit_hash
 
