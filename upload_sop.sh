@@ -94,7 +94,9 @@ echo \
 success=$(grep -o '"Success":true' tmp/update_response.json)
 
 # Print the result
+echo "🔍 Upload response:"
 cat tmp/upload_response.json
+
 echo \
 
 if [[ "$success" == "\"Success\":true" ]]; then
