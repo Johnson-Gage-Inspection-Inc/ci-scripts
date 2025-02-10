@@ -284,18 +284,34 @@ jobs:
           name: renamed-excel
           path: .
 
-      - name: Create GitHub Release
+      - name: Get PR Description
+        id: pr_body
+        run: |
+          PR_NUMBER=$(gh pr list --base main --state merged --limit 1 --json number --jq '.[0].number' || echo "")
+          if [[ -z "$PR_NUMBER" ]]; then
+            echo "❌ No merged PR found for this commit. Falling back to commit message."
+            echo "pr_body=" >> $GITHUB_ENV
+          else
+            PR_BODY=$(gh pr view "$PR_NUMBER" --json body --jq '.body' || echo "")
+            if [[ -z "$PR_BODY" ]]; then
+              echo "⚠️ PR found, but no description available. Using commit message."
+            fi
+            echo "✅ PR Body Retrieved."
+            echo "pr_body=$PR_BODY" >> $GITHUB_OUTPUT
+          fi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          gh release create ${{ needs.update-excel-metadata.outputs.RELEASE_TAG }} \
-            --repo "${{ github.repository }}" \
-            --title "Release ${{ needs.update-excel-metadata.outputs.RELEASE_TAG }}" \
-            --notes "Automated release for commit ${{ needs.update-excel-metadata.outputs.COMMIT_HASH }} by ${{ github.actor }}."
 
-      - name: Upload Renamed Excel File as Release Asset
+      - name: Get Latest Commit Message
+        id: commit_message
+        run: echo "commit_msg=$(git log -1 --pretty=%B)" >> $GITHUB_OUTPUT
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ needs.update-excel-metadata.outputs.RELEASE_TAG }}
+          generate_release_notes: true
+          body: "${{ steps.pr_body.outputs.pr_body }}\n\nCommit Message: ${{ steps.commit_message.outputs.commit_msg }}"
+          files: "${{ needs.rename-file.outputs.RENAMED_FILE }}"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          gh release upload ${{ needs.update-excel-metadata.outputs.RELEASE_TAG }} "${{ needs.rename-file.outputs.RENAMED_FILE }}" \
-            --repo "${{ github.repository }}"
