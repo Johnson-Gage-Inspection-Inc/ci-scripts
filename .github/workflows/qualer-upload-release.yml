@@ -177,7 +177,6 @@ jobs:
       - name: Upload Excel File to SharePoint
         env:
           ACCESS_TOKEN: ${{ env.ACCESS_TOKEN }}
-          DRIVE_ID: ${{ env.DRIVE_ID }}
         run: |
           FILE_PATH="${{ needs.re-validate.outputs.EXCEL_FILE }}"
           FILE_NAME=$(basename "$FILE_PATH")
