@@ -302,12 +302,16 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Get Latest Commit Message
+        id: commit_message
+        run: echo "commit_msg=\"$(git log -1 --pretty=%B)\"" >> $GITHUB_OUTPUT
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
         with:
           tag_name: ${{ needs.update-excel-metadata.outputs.RELEASE_TAG }}
           generate_release_notes: true
-          body: "${{ steps.pr_body.outputs.pr_body }}\n\nCommit Message: $(git log -1 --pretty=%B)"
+          body: "${{ steps.pr_body.outputs.pr_body }} || ${{ steps.commit_message.outputs.commit_msg }}"
           files: "${{ needs.rename-file.outputs.RENAMED_FILE }}"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
