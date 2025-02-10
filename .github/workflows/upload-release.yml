@@ -179,7 +179,8 @@ jobs:
           ACCESS_TOKEN: ${{ env.ACCESS_TOKEN }}
         run: |
           FILE_PATH="${{ needs.re-validate.outputs.EXCEL_FILE }}"
-          FILE_NAME=$(basename "$FILE_PATH")
+          FILE_NAME=$(basename "$FILE_PATH" | sed 's/ /%20/g')
+          echo "FILE_NAME=$FILE_NAME" # Debugging step
           DRIVE_ID="b!62zY21rTlkyTbN2E9veLub0A9-qfsQ1LmVs-siAwkjUpikiIFZhHTb5VFJuc7Xng"
           UPLOAD_URL="https://graph.microsoft.com/v1.0/drives/$DRIVE_ID/root:/$FILE_NAME:/content"
 
