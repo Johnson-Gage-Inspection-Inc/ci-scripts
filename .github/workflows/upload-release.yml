@@ -312,8 +312,8 @@ jobs:
       - name: Determine Release Body
         id: release_body
         run: |
-          PR_BODY="${{ steps.pr_body.outputs.PR_BODY }}"
-          COMMIT_MSG="${{ steps.commit_message.outputs.COMMIT_MSG }}"
+          PR_BODY=${{ steps.pr_body.outputs.PR_BODY }}
+          COMMIT_MSG=${{ steps.commit_message.outputs.COMMIT_MSG }}
 
           # Ensure PR_BODY is correctly handled and fallback to COMMIT_MSG if empty
           if [[ -z "$PR_BODY" || "$PR_BODY" == "\"\"" ]]; then
@@ -323,9 +323,11 @@ jobs:
           fi
 
           # Ensure proper escaping for GitHub Actions output
-          echo "RELEASE_BODY<<EOF" >> $GITHUB_OUTPUT
-          echo "$RELEASE_BODY" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+          {
+            echo "RELEASE_BODY<<EOF"
+            echo "$RELEASE_BODY"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
