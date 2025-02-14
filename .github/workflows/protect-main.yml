@@ -10,6 +10,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
       - name: Ensure correct working directory
         run: cd $GITHUB_WORKSPACE
 
@@ -22,6 +25,9 @@ jobs:
         run: |
           gh repo list Johnson-Gage-Inspection-Inc --json name --jq '.[] | select(.name | startswith("xl-")) | .name' > repos.txt
 
+      - name: Ensure main-protection.json exists
+        run: cp $GITHUB_WORKSPACE/main-protection.json $RUNNER_TEMP/
+
       - name: Apply branch protection to each xl-* repo
         run: |
           while read -r REPO; do
@@ -30,5 +36,5 @@ jobs:
               -H "Accept: application/vnd.github+json" \
               -H "Content-Type: application/json" \
               "/repos/Johnson-Gage-Inspection-Inc/$REPO/branches/main/protection" \
-              --input "$GITHUB_WORKSPACE/main-protection.json"
+              --input "$RUNNER_TEMP/main-protection.json"
           done < repos.txt
