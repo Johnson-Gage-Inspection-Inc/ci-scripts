@@ -14,6 +14,8 @@ for var in "${required_vars[@]}"; do
     if [[ -z "${!var}" ]]; then
         echo "❌ $var environment variable is not set. Exiting..."
         exit 1
+    else
+        echo "✅ $var environment variable is set."
     fi
 done
 
