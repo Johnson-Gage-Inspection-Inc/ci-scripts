@@ -1,0 +1,73 @@
+name: Apply Branch Protection to xl-* Repos
+
+on:
+  schedule:
+    - cron: '0 0 * * *'  # Runs daily at midnight UTC
+  workflow_dispatch:  # Allows manual trigger
+
+jobs:
+  apply-branch-protection:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Set up GitHub CLI
+        run: |
+          gh auth login --with-token <<< "${{ secrets.GITHUB_TOKEN }}"
+
+      - name: Get list of xl-* repositories
+        id: list-repos
+        run: |
+          gh repo list Johnson-Gage-Inspection-Inc --json name --jq '.[] | select(.name | startswith("xl-")) | .name' > repos.txt
+
+      - name: Apply branch protection to each xl-* repo
+        run: |
+          while read -r REPO; do
+            echo "Applying branch protection to $REPO..."
+            gh api --method PUT \
+              -H "Accept: application/vnd.github+json" \
+              -H "Content-Type: application/json" \
+              "/repos/Johnson-Gage-Inspection-Inc/$REPO/branches/main/protection" \
+              --input - <<EOF
+            {
+              "required_status_checks": {
+                "strict": true,
+                "contexts": [
+                  "validate / authenticate-with-sharepoint",
+                  "validate / validate-excel",
+                  "validate / validate-qualer-upload"
+                ]
+              },
+              "enforce_admins": false,
+              "required_pull_request_reviews": {
+                "required_approving_review_count": 1,
+                "dismiss_stale_reviews": true,
+                "require_code_owner_reviews": true,
+                "require_last_push_approval": true,
+                "required_review_thread_resolution": false,
+                "bypass_pull_request_allowances": {
+                  "users": ["rhythmatician"],
+                  "teams": [],
+                  "apps": []
+                }
+              },
+              "allow_force_pushes": false,
+              "allow_deletions": false,
+              "required_linear_history": true,
+              "required_signatures": true,
+              "required_conversation_resolution": false,
+              "restrictions": {
+                "users": ["rhythmatician"],
+                "teams": [],
+                "apps": []
+              },
+              "bypass_actors": [
+                {
+                  "actor_id": null,
+                  "actor_type": "User",
+                  "bypass_mode": "always",
+                  "username": "rhythmatician"
+                }
+              ]
+            }
+            EOF
+          done < repos.txt
