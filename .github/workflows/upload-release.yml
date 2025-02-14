@@ -287,32 +287,43 @@ jobs:
         run: |
           PR_NUMBER=$(gh pr list --base main --state merged --limit 1 --json number --jq '.[0].number' || echo "")
           if [[ -z "$PR_NUMBER" ]]; then
-            echo "❌ No merged PR found for this commit. Falling back to commit message."
-            echo "pr_body=" >> $GITHUB_ENV
+            echo "❌ No merged PR found. Using commit message."
+            echo "PR_BODY=" >> $GITHUB_OUTPUT
           else
             PR_BODY=$(gh pr view "$PR_NUMBER" --json body --jq '.body' || echo "")
             if [[ -z "$PR_BODY" ]]; then
               echo "⚠️ PR found, but no description available. Using commit message."
+              PR_BODY=""
             fi
-            # Escape newlines and special characters
-            PR_BODY_ESCAPED=$(echo "$PR_BODY" | jq -R -s '.')
+            PR_BODY_ESCAPED=$(echo "$PR_BODY" | jq -Rs '.')
             echo "✅ PR Body Retrieved."
-            echo "pr_body=$PR_BODY_ESCAPED" >> $GITHUB_OUTPUT
+            echo "PR_BODY=$PR_BODY_ESCAPED" >> $GITHUB_OUTPUT
           fi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  
 
       - name: Get Latest Commit Message
         id: commit_message
-        run: echo "commit_msg=\"$(git log -1 --pretty=%B)\"" >> $GITHUB_OUTPUT
+        run: |
+          COMMIT_MSG=$(git log -1 --pretty=%B)
+          COMMIT_MSG_ESCAPED=$(echo "$COMMIT_MSG" | jq -Rs '.')
+          echo "COMMIT_MSG=$COMMIT_MSG_ESCAPED" >> $GITHUB_OUTPUT
+
+      - name: Determine Release Body
+        id: release_body
+        run: |
+          if [[ -z "${{ steps.pr_body.outputs.PR_BODY }}" ]]; then
+            echo "RELEASE_BODY=${{ steps.commit_message.outputs.COMMIT_MSG }}" >> $GITHUB_OUTPUT
+          else
+            echo "RELEASE_BODY=${{ steps.pr_body.outputs.PR_BODY }}" >> $GITHUB_OUTPUT
+          fi
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
         with:
           tag_name: ${{ needs.update-excel-metadata.outputs.RELEASE_TAG }}
           generate_release_notes: true
-          body: "${{ steps.pr_body.outputs.pr_body }} || ${{ steps.commit_message.outputs.commit_msg }}"
+          body: ${{ steps.release_body.outputs.RELEASE_BODY }}
           files: "${{ needs.rename-file.outputs.RENAMED_FILE }}"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
