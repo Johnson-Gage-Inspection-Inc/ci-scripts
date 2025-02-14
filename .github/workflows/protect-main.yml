@@ -10,8 +10,8 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Ensure correct working directory
-        run: cd $GITHUB_WORKSPACE
+      - name: Debug directory contents
+        run: ls -R $GITHUB_WORKSPACE
 
       - name: Set up GitHub CLI
         run: |
