@@ -127,8 +127,7 @@ jobs:
               workbook.BuiltinDocumentProperties("Keywords").Value = commit_hash
               workbook.BuiltinDocumentProperties("Company").Value = company_name
 
-              # Save with explicit FileFormat for .xltm
-              workbook.SaveAs(modified_file, FileFormat=53)
+              workbook.SaveAs(modified_file, FileFormat=workbook.FileFormat)
 
               workbook.Close(SaveChanges=True)
               excel.Quit()
