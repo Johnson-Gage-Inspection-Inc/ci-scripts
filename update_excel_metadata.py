@@ -4,7 +4,7 @@ import win32com.client
 
 original_file = os.getenv("EXCEL_FILE", "UNKNOWN")
 if not os.path.exists(original_file):
-    print(f"❌ ERROR: File not found: {original_file}")
+    print(f"ERROR: File not found: {original_file}")
     exit(1)
 
 # Ensure Temp directory exists
