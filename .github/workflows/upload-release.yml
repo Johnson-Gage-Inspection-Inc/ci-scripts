@@ -79,10 +79,10 @@ jobs:
       COMMIT_HASH: ${{ needs.re-validate.outputs.COMMIT_HASH }}
       RELEASE_TAG: ${{ needs.re-validate.outputs.RELEASE_TAG }}
     steps:
-      - name: Install Microsoft Excel via Winget
+      - name: Install Microsoft Excel via Click-to-Run
         shell: pwsh
         run: |
-          winget install --id Microsoft.Office.Excel -e --silent --accept-package-agreements --accept-source-agreements
+          Start-Process -FilePath "C:\Program Files\Common Files\Microsoft Shared\ClickToRun\OfficeC2RClient.exe" -ArgumentList "/configure Excel /quiet /norestart" -NoNewWindow -Wait
 
       - name: Verify Excel Installation
         run: |
