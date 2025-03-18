@@ -76,9 +76,6 @@ jobs:
           tzutil /s "Central Standard Time"
         shell: pwsh
 
-      - name: Install Python dependencies
-        run: pip install pywin32
-
       - name: Locate the Identified Excel File
         run: |
           echo "EXCEL_FILE=${{ needs.re-validate.outputs.EXCEL_FILE }}" >> $GITHUB_ENV
@@ -97,6 +94,15 @@ jobs:
           repository: Johnson-Gage-Inspection-Inc/ci-scripts
           path: ci-scripts
 
+      - name: Install Python dependencies
+        run: pip install pywin32
+
+      - name: Debug Environment Variables
+        shell: pwsh
+        run: |
+          echo "COMMIT_HASH=${{ steps.commit-hash.outputs.COMMIT_HASH }}"
+          echo "RELEASE_TAG=${{ steps.release-tag.outputs.RELEASE_TAG }}"
+
       - name: Update Excel Metadata (Revision, Version, Company)
         id: modify
         shell: pwsh
@@ -105,6 +111,8 @@ jobs:
           COMMIT_HASH: ${{ steps.commit-hash.outputs.COMMIT_HASH }}
           RELEASE_TAG: ${{ steps.release-tag.outputs.RELEASE_TAG }}
         run: |
+          echo "COMMIT_HASH=${{ env.COMMIT_HASH }}"  # Debugging
+          echo "RELEASE_TAG=${{ env.RELEASE_TAG }}"  # Debugging
           python ci-scripts/update_excel_metadata.py
 
       - name: Upload Modified Excel File
