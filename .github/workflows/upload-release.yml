@@ -93,43 +93,59 @@ jobs:
         id: modify
         run: |
           python <<EOF
-          import openpyxl
-          from datetime import datetime
           import os
+          import uuid
+          import win32com.client
 
           original_file = os.getenv("EXCEL_FILE", "UNKNOWN")
           if not os.path.exists(original_file):
               print(f"❌ ERROR: File not found: {original_file}")
               exit(1)
 
-          # Define a new file path for the modified file
-          modified_file = os.path.join("/tmp", os.path.basename(original_file))
+          # Ensure Temp directory exists
+          temp_dir = os.getenv("RUNNER_TEMP", "C:\\Temp")
+          if not os.path.exists(temp_dir):
+              os.makedirs(temp_dir)
 
-          workbook = openpyxl.load_workbook(original_file)
-          metadata = workbook.properties
+          # Use unique filename to prevent conflicts
+          modified_file = os.path.join(temp_dir, f"{uuid.uuid4().hex}.xltm")
 
           # Read commit hash and tag from environment
-          commit_hash = "${{ steps.commit-hash.outputs.COMMIT_HASH }}"
-          tag = "${{ steps.release-tag.outputs.RELEASE_TAG }}"
+          commit_hash = os.getenv("COMMIT_HASH", "UNKNOWN")
+          tag = os.getenv("RELEASE_TAG", "UNKNOWN")
           company_name = "Johnson Gage & Inspection"
 
-          # Set metadata properties
-          metadata.version = tag
-          metadata.keywords = commit_hash
+          # Open Excel
+          excel = win32com.client.Dispatch("Excel.Application")
+          excel.DisplayAlerts = False
 
-          # Save metadata and workbook as a new file
-          workbook.properties = metadata
-          workbook.save(modified_file)
+          try:
+              workbook = excel.Workbooks.Open(original_file)
 
-          # Confirm metadata was written
-          print(f"✅ Updated Excel Metadata in {modified_file}: Version={tag}, Tags={commit_hash}, Company={company_name}")
+              # Update metadata in memory
+              workbook.BuiltinDocumentProperties("Title").Value = f"Version {tag}"
+              workbook.BuiltinDocumentProperties("Keywords").Value = commit_hash
+              workbook.BuiltinDocumentProperties("Company").Value = company_name
 
-          # Output the new modified file path
-          with open(os.environ['GITHUB_ENV'], "a") as f:
-              f.write(f"EXCEL_FILE={modified_file}\n")
+              # Use SaveCopyAs to avoid overwrite issues
+              workbook.SaveCopyAs(modified_file)
 
-          with open(os.environ['GITHUB_OUTPUT'], "a") as f:
-              f.write(f"EXCEL_FILE={modified_file}\n")
+              workbook.Close(SaveChanges=True)
+
+              print(
+                  f"✅ Updated Excel Metadata in {modified_file}:",
+                  f"Version={tag}, Tags={commit_hash}, Company={company_name}"
+              )
+
+              # Output new file path
+              with open(os.environ["GITHUB_ENV"], "a") as f:
+                  f.write(f"EXCEL_FILE={modified_file}\n")
+
+              with open(os.environ["GITHUB_OUTPUT"], "a") as f:
+                  f.write(f"EXCEL_FILE={modified_file}\n")
+
+          finally:
+              excel.Quit()
           EOF
 
       - name: Upload Modified Excel File
