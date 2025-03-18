@@ -101,6 +101,10 @@ jobs:
       - name: Update Excel Metadata (Revision, Version, Company)
         id: modify
         shell: pwsh
+        env:
+          EXCEL_FILE: ${{ needs.re-validate.outputs.EXCEL_FILE }}
+          COMMIT_HASH: ${{ steps.commit-hash.outputs.COMMIT_HASH }}
+          RELEASE_TAG: ${{ steps.release-tag.outputs.RELEASE_TAG }}
         run: |
           python ci-scripts/update_excel_metadata.py
 
