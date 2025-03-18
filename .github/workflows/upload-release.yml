@@ -79,25 +79,20 @@ jobs:
       COMMIT_HASH: ${{ needs.re-validate.outputs.COMMIT_HASH }}
       RELEASE_TAG: ${{ needs.re-validate.outputs.RELEASE_TAG }}
     steps:
-      - name: Verify Excel Installation 1
+      - name: Install Microsoft 365 Apps (Excel)
+        run: |
+          choco install microsoft365business -y
+        shell: pwsh
+
+      - name: Verify Excel Installation
         run: |
           Get-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*' | Where-Object { $_.DisplayName -like "*Excel*" }
         shell: pwsh
 
-      - name: Manually Register Excel COM
+      - name: Register Excel for COM
         shell: pwsh
         run: |
           Start-Process -FilePath "C:\Program Files\Microsoft Office\root\Office16\EXCEL.EXE" -ArgumentList "/regserver" -NoNewWindow -Wait
-
-      - name: Verify Excel Installation 2
-        run: |
-          Get-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*' | Where-Object { $_.DisplayName -like "*Excel*" }
-        shell: pwsh
-
-      - name: Debug COM Excel Availability
-        shell: pwsh
-        run: |
-          python -c "import win32com.client; print(win32com.client.Dispatch('Excel.Application'))"
 
       - name: Checkout repository
         uses: actions/checkout@v4
