@@ -1,62 +1,42 @@
-import os
-import uuid
+import pythoncom
 import win32com.client
 
-original_file = os.getenv("EXCEL_FILE", "UNKNOWN")
-if not os.path.exists(original_file):
-    print(f"ERROR: File not found: {original_file}")
-    exit(1)
 
-# Ensure Temp directory exists
-temp_dir = os.getenv("RUNNER_TEMP", "C:\\Temp")
-if not os.path.exists(temp_dir):
-    os.makedirs(temp_dir)
+def update_excel_metadata(excel_file, commit_hash, release_tag):
+    try:
+        # Try to create an instance of the Excel application
+        excel_app = win32com.client.Dispatch("Excel.Application")
+        print("Successfully created Excel application instance.")
 
-# Generate unique filename
-modified_file = os.path.join(temp_dir, f"{uuid.uuid4().hex}.xltm")
+        # Open the Excel file
+        w = excel_app.Workbooks.Open(excel_file)
+        print(f"Opened Excel file: {excel_file}")
 
-# Read commit hash and tag from environment
-commit_hash = os.getenv("COMMIT_HASH", "UNKNOWN")
-tag = os.getenv("RELEASE_TAG", "UNKNOWN")
-company_name = "Johnson Gage & Inspection"
+        # Update metadata
+        w.CustomDocumentProperties("Revision").Value = commit_hash
+        w.CustomDocumentProperties("Version").Value = release_tag
+        w.CustomDocumentProperties("Company").Value = "Johnson Gage & Inspection, Inc"
+        w.Save()
+        w.Close()
 
-# Open Excel
-excel = win32com.client.Dispatch("Excel.Application")
-excel.DisplayAlerts = False
+        print("Updated Excel metadata successfully.")
+    except pythoncom.com_error as e:
+        print(f"COM error: {e}")
+        exit(1)
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        exit(2)
+    finally:
+        excel_app.Quit()
 
-try:
-    workbook = excel.Workbooks.Open(original_file)
 
-    # Update metadata
-    workbook.BuiltinDocumentProperties("Title").Value = f"Version {tag}"
-    workbook.BuiltinDocumentProperties("Keywords").Value = commit_hash
-    workbook.BuiltinDocumentProperties("Company").Value = company_name
+if __name__ == "__main__":
+    import os
+    excel_file = os.getenv("EXCEL_FILE")
+    commit_hash = os.getenv("COMMIT_HASH")
+    release_tag = os.getenv("RELEASE_TAG")
 
-    workbook.Save()
-    workbook.Close(SaveChanges=True)
-    excel.Quit()
-
-    excel = win32com.client.Dispatch("Excel.Application")
-    workbook = excel.Workbooks.Open(original_file)
-
-    workbook.SaveAs(modified_file, FileFormat=workbook.FileFormat)
-
-    workbook.Close(SaveChanges=True)
-    excel.Quit()
-
-    print(
-        f"✅ Updated Excel Metadata in {modified_file}:",
-        f"Version={tag}, Tags={commit_hash}, Company={company_name}"
-    )
-
-    # Output new file path
-    with open(os.environ["GITHUB_ENV"], "a") as f:
-        f.write(f"EXCEL_FILE={modified_file}\n")
-
-    with open(os.environ["GITHUB_OUTPUT"], "a") as f:
-        f.write(f"EXCEL_FILE={modified_file}\n")
-
-except Exception as e:
-    print(f"Error updating file: {e}")
-    workbook.Close(SaveChanges=False)
-    excel.Quit()
+    if excel_file and commit_hash and release_tag:
+        update_excel_metadata(excel_file, commit_hash, release_tag)
+    else:
+        print("Missing environment variables: EXCEL_FILE, COMMIT_HASH, or RELEASE_TAG")
