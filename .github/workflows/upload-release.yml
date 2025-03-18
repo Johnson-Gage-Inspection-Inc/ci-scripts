@@ -92,11 +92,17 @@ jobs:
         id: release-tag
         run: echo "RELEASE_TAG=$(date +%Y-%m-%d)" >> $GITHUB_OUTPUT
 
+      - name: Checkout Excel Metadata Script Repository
+        uses: actions/checkout@v4
+        with:
+          repository: Johnson-Gage-Inspection-Inc/ci-scripts
+          path: ci-scripts
+
       - name: Update Excel Metadata (Revision, Version, Company)
         id: modify
         shell: pwsh
         run: |
-          python update_excel_metadata.py
+          python ci-scripts/update_excel_metadata.py
 
       - name: Upload Modified Excel File
         uses: actions/upload-artifact@v4
