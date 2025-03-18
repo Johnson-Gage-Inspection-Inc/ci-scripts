@@ -58,7 +58,6 @@ jobs:
                 echo "UPLOAD=true" >> $GITHUB_OUTPUT
               fi
             fi
-
   update-excel-metadata:
     needs: re-validate
     if: needs.re-validate.outputs.UPLOAD == 'true'
@@ -80,17 +79,16 @@ jobs:
 
       - name: Extract Git Commit Info
         id: commit-hash
-        run: echo "COMMIT_HASH=$(echo $GITHUB_SHA | cut -c1-7)" >> $GITHUB_OUTPUT
+        run: echo "COMMIT_HASH=$(echo $GITHUB_SHA | cut -c1-7)" >> $GITHUB_ENV
 
       - name: Set clock to central time (Windows)
         run: |
           tzutil /s "Central Standard Time"
         shell: pwsh
 
-
       - name: Get Release Tag (Current Date)
         id: release-tag
-        run: echo "RELEASE_TAG=$(date +%Y-%m-%d)" >> $GITHUB_OUTPUT
+        run: echo "RELEASE_TAG=$(date +%Y-%m-%d)" >> $GITHUB_ENV
 
       - name: Checkout CI Scripts Repository
         uses: actions/checkout@v4
@@ -103,8 +101,8 @@ jobs:
         shell: pwsh
         env:
           EXCEL_FILE: ${{ needs.re-validate.outputs.EXCEL_FILE }}
-          COMMIT_HASH: ${{ env.COMMIT_HASH }}
-          RELEASE_TAG: ${{ env.RELEASE_TAG }}
+          COMMIT_HASH: ${{ steps.commit-hash.outputs.COMMIT_HASH }}
+          RELEASE_TAG: ${{ steps.release-tag.outputs.RELEASE_TAG }}
         run: |
           python ci-scripts/update_excel_metadata.py
 
@@ -113,7 +111,6 @@ jobs:
         with:
           name: updated-excel
           path: ${{ steps.modify.outputs.EXCEL_FILE }}
-
   sync-to-sharepoint:
     needs: [update-excel-metadata, re-validate]
     if: needs.re-validate.outputs.UPLOAD == 'true'
