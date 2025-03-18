@@ -62,7 +62,7 @@ jobs:
   update-excel-metadata:
     needs: re-validate
     if: needs.re-validate.outputs.UPLOAD == 'true'
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     outputs:
       EXCEL_FILE: ${{ steps.modify.outputs.EXCEL_FILE }}
       COMMIT_HASH: ${{ steps.commit-hash.outputs.COMMIT_HASH }}
