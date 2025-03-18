@@ -107,7 +107,7 @@ jobs:
           if not os.path.exists(temp_dir):
               os.makedirs(temp_dir)
 
-          # Use unique filename to prevent conflicts
+          # Generate unique filename
           modified_file = os.path.join(temp_dir, f"{uuid.uuid4().hex}.xltm")
 
           # Read commit hash and tag from environment
@@ -126,6 +126,13 @@ jobs:
               workbook.BuiltinDocumentProperties("Title").Value = f"Version {tag}"
               workbook.BuiltinDocumentProperties("Keywords").Value = commit_hash
               workbook.BuiltinDocumentProperties("Company").Value = company_name
+
+              workbook.Save()
+              workbook.Close(SaveChanges=True)
+              excel.Quit()
+
+              excel = win32com.client.Dispatch("Excel.Application")
+              workbook = excel.Workbooks.Open(original_file)
 
               workbook.SaveAs(modified_file, FileFormat=workbook.FileFormat)
 
