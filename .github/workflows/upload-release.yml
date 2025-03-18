@@ -94,25 +94,30 @@ jobs:
           repository: Johnson-Gage-Inspection-Inc/ci-scripts
           path: ci-scripts
 
-      - name: Install Python dependencies
-        run: pip install pywin32
-
       - name: Debug Environment Variables
         shell: pwsh
         run: |
+          echo "EXCEL_FILE=${{ needs.re-validate.outputs.EXCEL_FILE }}"
           echo "COMMIT_HASH=${{ steps.commit-hash.outputs.COMMIT_HASH }}"
           echo "RELEASE_TAG=${{ steps.release-tag.outputs.RELEASE_TAG }}"
+
+      - name: Install Python dependencies
+        run: pip install pywin32
 
       - name: Update Excel Metadata (Revision, Version, Company)
         id: modify
         shell: pwsh
         env:
           EXCEL_FILE: ${{ needs.re-validate.outputs.EXCEL_FILE }}
-          COMMIT_HASH: ${{ steps.commit-hash.outputs.COMMIT_HASH }}
-          RELEASE_TAG: ${{ steps.release-tag.outputs.RELEASE_TAG }}
         run: |
-          echo "COMMIT_HASH=${{ env.COMMIT_HASH }}"  # Debugging
-          echo "RELEASE_TAG=${{ env.RELEASE_TAG }}"  # Debugging
+          echo "COMMIT_HASH=${{ steps.commit-hash.outputs.COMMIT_HASH }}" >> $env:GITHUB_ENV
+          echo "RELEASE_TAG=${{ steps.release-tag.outputs.RELEASE_TAG }}" >> $env:GITHUB_ENV
+
+          # Debugging: Print values
+          echo "COMMIT_HASH=${{ steps.commit-hash.outputs.COMMIT_HASH }}"
+          echo "RELEASE_TAG=${{ steps.release-tag.outputs.RELEASE_TAG }}"
+
+          # Run the Python script, now with correctly set env variables
           python ci-scripts/update_excel_metadata.py
 
       - name: Upload Modified Excel File
