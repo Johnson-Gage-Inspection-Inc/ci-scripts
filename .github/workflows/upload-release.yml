@@ -103,8 +103,8 @@ jobs:
         shell: pwsh
         env:
           EXCEL_FILE: ${{ needs.re-validate.outputs.EXCEL_FILE }}
-          COMMIT_HASH: ${{ steps.commit-hash.outputs.COMMIT_HASH }}
-          RELEASE_TAG: ${{ steps.release-tag.outputs.RELEASE_TAG }}
+          COMMIT_HASH: ${{ env.COMMIT_HASH }}
+          RELEASE_TAG: ${{ env.RELEASE_TAG }}
         run: |
           python ci-scripts/update_excel_metadata.py
 
