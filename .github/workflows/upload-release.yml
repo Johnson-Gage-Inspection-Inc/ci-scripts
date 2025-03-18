@@ -28,10 +28,19 @@ jobs:
     outputs:
       EXCEL_FILE: ${{ steps.set-excel-file.outputs.EXCEL_FILE }}
       UPLOAD: ${{ steps.set-excel-file.outputs.UPLOAD }}
+      COMMIT_HASH: ${{ steps.commit-hash.outputs.COMMIT_HASH }}
+      RELEASE_TAG: ${{ steps.release-tag.outputs.RELEASE_TAG }}
     steps:
-
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Extract Git Commit Info
+        id: commit-hash
+        run: echo "COMMIT_HASH=$(echo $GITHUB_SHA | cut -c1-7)" >> "$GITHUB_OUTPUT"
+
+      - name: Get Release Tag (Current Date)
+        id: release-tag
+        run: echo "RELEASE_TAG=$(date +%Y-%m-%d)" >> "$GITHUB_OUTPUT"
 
       - name: Capture Excel File Changes
         id: capture_changes
@@ -43,30 +52,32 @@ jobs:
       - name: Count and Validate Excel Files
         id: set-excel-file
         run: |
-            EXCEL_COUNT=$(find . -type f -iname "*.xl*" | wc -l)
-            echo "Excel files found: $EXCEL_COUNT"
+          EXCEL_COUNT=$(find . -type f -iname "*.xl*" | wc -l)
+          echo "Excel files found: $EXCEL_COUNT"
 
-            if [ "$EXCEL_COUNT" -eq 0 ]; then
-              echo "✅ No Excel files found. Exiting without error."
-            elif [ "$EXCEL_COUNT" -eq 1 ]; then
-              if ! [ -s changed_files.txt ]; then
-                echo "✅ No Excel files changed. Exiting without error."
-              else
-                EXCEL_FILE=$(find . -type f -iname "*.xl*" | head -n 1)
-                echo "✅ Using Excel file: $EXCEL_FILE"
-                echo "EXCEL_FILE=$EXCEL_FILE" >> $GITHUB_OUTPUT
-                echo "UPLOAD=true" >> $GITHUB_OUTPUT
-              fi
+          if [ "$EXCEL_COUNT" -eq 0 ]; then
+            echo "✅ No Excel files found. Exiting without error."
+            echo "UPLOAD=false" >> "$GITHUB_OUTPUT"
+          elif [ "$EXCEL_COUNT" -eq 1 ]; then
+            if ! [ -s changed_files.txt ]; then
+              echo "✅ No Excel files changed. Exiting without error."
+              echo "UPLOAD=false" >> "$GITHUB_OUTPUT"
+            else
+              EXCEL_FILE=$(find . -type f -iname "*.xl*" | head -n 1)
+              echo "✅ Using Excel file: $EXCEL_FILE"
+              echo "EXCEL_FILE=$EXCEL_FILE" >> "$GITHUB_OUTPUT"
+              echo "UPLOAD=true" >> "$GITHUB_OUTPUT"
             fi
+          fi
 
   update-excel-metadata:
     needs: re-validate
     if: needs.re-validate.outputs.UPLOAD == 'true'
     runs-on: windows-2019
-    outputs:
-      EXCEL_FILE: ${{ steps.modify.outputs.EXCEL_FILE }}
-      COMMIT_HASH: ${{ steps.commit-hash.outputs.COMMIT_HASH }}
-      RELEASE_TAG: ${{ steps.release-tag.outputs.RELEASE_TAG }}
+    env:
+      EXCEL_FILE: ${{ needs.re-validate.outputs.EXCEL_FILE }}
+      COMMIT_HASH: ${{ needs.re-validate.outputs.COMMIT_HASH }}
+      RELEASE_TAG: ${{ needs.re-validate.outputs.RELEASE_TAG }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -76,22 +87,6 @@ jobs:
           tzutil /s "Central Standard Time"
         shell: pwsh
 
-      - name: Locate the Identified Excel File
-        run: |
-          echo "EXCEL_FILE=${{ needs.re-validate.outputs.EXCEL_FILE }}" >> $GITHUB_ENV
-
-      - name: Extract Git Commit Info
-        id: commit-hash
-        run: |
-          echo "COMMIT_HASH=$(echo $GITHUB_SHA | cut -c1-7)" >> $GITHUB_OUTPUT
-          echo "COMMIT_HASH=$(echo $GITHUB_SHA | cut -c1-7)" >> $GITHUB_ENV
-
-      - name: Get Release Tag (Current Date)
-        id: release-tag
-        run: |
-          echo "RELEASE_TAG=$(date +%Y-%m-%d)" >> $GITHUB_OUTPUT
-          echo "RELEASE_TAG=$(date +%Y-%m-%d)" >> $GITHUB_ENV
-
 
       - name: Checkout CI Scripts Repository
         uses: actions/checkout@v4
@@ -99,12 +94,12 @@ jobs:
           repository: Johnson-Gage-Inspection-Inc/ci-scripts
           path: ci-scripts
 
-      - name: Debug Environment Variables
-        shell: pwsh
+      - name: Debug Variables
         run: |
-          echo "EXCEL_FILE=${{ needs.re-validate.outputs.EXCEL_FILE }}"
-          echo "COMMIT_HASH=${{ steps.commit-hash.outputs.COMMIT_HASH }}"
-          echo "RELEASE_TAG=${{ steps.release-tag.outputs.RELEASE_TAG }}"
+          echo "DEBUG: COMMIT_HASH=${{ needs.re-validate.outputs.COMMIT_HASH }}"
+          echo "DEBUG: RELEASE_TAG=${{ needs.re-validate.outputs.RELEASE_TAG }}"
+          echo "COMMIT_HASH=${{ needs.re-validate.outputs.COMMIT_HASH }}" >> $GITHUB_ENV
+          echo "RELEASE_TAG=${{ needs.re-validate.outputs.RELEASE_TAG }}" >> $GITHUB_ENV
 
       - name: Install Python dependencies
         run: pip install pywin32
@@ -114,27 +109,20 @@ jobs:
         shell: pwsh
         env:
           EXCEL_FILE: ${{ needs.re-validate.outputs.EXCEL_FILE }}
-          COMMIT_HASH: ${{ steps.commit-hash.outputs.COMMIT_HASH }}
-          RELEASE_TAG: ${{ steps.release-tag.outputs.RELEASE_TAG }}
+          COMMIT_HASH: ${{ needs.re-validate.outputs.COMMIT_HASH }}
+          RELEASE_TAG: ${{ needs.re-validate.outputs.RELEASE_TAG }}
         run: |
           echo "DEBUG: COMMIT_HASH=${{ env.COMMIT_HASH }}"
           echo "DEBUG: RELEASE_TAG=${{ env.RELEASE_TAG }}"
 
           if ("${{ env.COMMIT_HASH }}" -eq "") {
-            echo "❌ ERROR: COMMIT_HASH is empty!"; exit 1
+            echo "ERROR: COMMIT_HASH is empty!"; exit 1
           }
 
           if ("${{ env.RELEASE_TAG }}" -eq "") {
-            echo "❌ ERROR: RELEASE_TAG is empty!"; exit 1
+            echo "ERROR: RELEASE_TAG is empty!"; exit 1
           }
-
           python ci-scripts/update_excel_metadata.py
-
-      - name: Upload Modified Excel File
-        uses: actions/upload-artifact@v4
-        with:
-          name: updated-excel
-          path: ${{ steps.modify.outputs.EXCEL_FILE }}
 
   sync-to-sharepoint:
     needs: [update-excel-metadata, re-validate]
@@ -165,7 +153,7 @@ jobs:
           ACCESS_TOKEN=$(echo $TOKEN_RESPONSE | jq -r '.access_token')
           if [ "$ACCESS_TOKEN" == "null" ] || [ -z "$ACCESS_TOKEN" ]; then
             echo "Token Response: $TOKEN_RESPONSE"  # Debugging step
-            echo "❌ Error: Failed to retrieve access token. Exiting."
+            echo "Error: Failed to retrieve access token. Exiting."
             exit 1
           fi
           echo "ACCESS_TOKEN=$ACCESS_TOKEN" >> $GITHUB_ENV
@@ -189,7 +177,7 @@ jobs:
 
           if echo "$RESPONSE" | grep -q 'error'; then
             echo "RESPONSE: $RESPONSE"
-            echo "❌ Upload failed. Exiting."
+            echo "Upload failed. Exiting."
             exit 1
           fi
 
@@ -216,7 +204,7 @@ jobs:
         run: |
           TAGGED_FILE="${{ needs.re-validate.outputs.EXCEL_FILE }}"
           if [ -z "$TAGGED_FILE" ]; then
-            echo "❌ ERROR: TAGGED_FILE is empty. Exiting."
+            echo "ERROR: TAGGED_FILE is empty. Exiting."
             exit 1
           fi
           FILE_DIR=$(dirname "$TAGGED_FILE")
@@ -226,7 +214,7 @@ jobs:
           TODAY=$(date +%m-%d-%Y)
           RENAMED_FILE="${FILE_DIR}/${FILE_BASE} ${TODAY}.${FILE_EXT}"
           mv "$TAGGED_FILE" "$RENAMED_FILE"
-          echo "RENAMED_FILE=$RENAMED_FILE" >> $GITHUB_OUTPUT
+          echo "RENAMED_FILE=$RENAMED_FILE" >> "$GITHUB_OUTPUT"
 
       - name: Upload Renamed Excel File
         uses: actions/upload-artifact@v4
@@ -263,7 +251,7 @@ jobs:
           QUALER_EMAIL: ${{ secrets.QUALER_EMAIL }}
           QUALER_PASSWORD: ${{ secrets.QUALER_PASSWORD }}
           EXCEL_FILE: ${{ needs.rename-file.outputs.RENAMED_FILE }}
-          COMMIT_HASH: ${{ needs.update-excel-metadata.outputs.COMMIT_HASH }}
+          COMMIT_HASH: ${{ needs.re-validate.outputs.COMMIT_HASH }}
           AUTHOR_NAME: ${{ github.actor }}
 
   create-github-release:
@@ -285,8 +273,8 @@ jobs:
         run: |
           PR_NUMBER=$(gh pr list --base main --state merged --limit 1 --json number --jq '.[0].number' || echo "")
           if [[ -z "$PR_NUMBER" ]]; then
-            echo "❌ No merged PR found. Using commit message."
-            echo "PR_BODY=" >> $GITHUB_OUTPUT
+            echo "No merged PR found. Using commit message."
+            echo "PR_BODY=" >> "$GITHUB_OUTPUT"
           else
             PR_BODY=$(gh pr view "$PR_NUMBER" --json body --jq '.body' || echo "")
             if [[ -z "$PR_BODY" ]]; then
@@ -295,7 +283,7 @@ jobs:
             fi
             PR_BODY_ESCAPED=$(echo "$PR_BODY" | jq -Rs '.')
             echo "✅ PR Body Retrieved."
-            echo "PR_BODY=$PR_BODY_ESCAPED" >> $GITHUB_OUTPUT
+            echo "PR_BODY=$PR_BODY_ESCAPED" >> "$GITHUB_OUTPUT"
           fi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -305,7 +293,7 @@ jobs:
         run: |
           COMMIT_MSG=$(git log -1 --pretty=%B)
           COMMIT_MSG_ESCAPED=$(echo "$COMMIT_MSG" | jq -Rs '.')
-          echo "COMMIT_MSG=$COMMIT_MSG_ESCAPED" >> $GITHUB_OUTPUT
+          echo "COMMIT_MSG=$COMMIT_MSG_ESCAPED" >> "$GITHUB_OUTPUT"
 
       - name: Determine Release Body
         id: release_body
@@ -330,7 +318,7 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
         with:
-          tag_name: ${{ needs.update-excel-metadata.outputs.RELEASE_TAG }}
+          tag_name: ${{ needs.re-validate.outputs.RELEASE_TAG }}
           generate_release_notes: true
           body: ${{ steps.release_body.outputs.RELEASE_BODY }}
           files: "${{ needs.rename-file.outputs.RENAMED_FILE }}"
