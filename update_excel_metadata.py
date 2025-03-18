@@ -5,7 +5,7 @@ import win32com.client
 
 def update_excel_metadata(excel_file, commit_hash, release_tag):
     if not os.path.exists(excel_file):
-        print(f"❌ ERROR: Excel file not found: {excel_file}")
+        print(f"ERROR: Excel file not found: {excel_file}")
         exit(1)
 
     try:
@@ -30,10 +30,10 @@ def update_excel_metadata(excel_file, commit_hash, release_tag):
         print("✅ Updated Excel metadata successfully.")
 
     except pythoncom.com_error as e:
-        print(f"❌ COM error: {e}")
+        print(f"COM error: {e}")
         exit(1)
     except Exception as e:
-        print(f"❌ An error occurred: {e}")
+        print(f"An error occurred: {e}")
         exit(2)
     finally:
         try:
@@ -52,7 +52,7 @@ if __name__ == "__main__":
     missing_vars = [var for var in variables if not os.getenv(var)]
     if missing_vars:
         for var in missing_vars:
-            print(f"❌ ERROR: Environment variable {var} is not set.")
+            print(f"ERROR: Environment variable {var} is not set.")
         exit(3)
 
     update_excel_metadata(excel_file, commit_hash, release_tag)
