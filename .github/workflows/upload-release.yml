@@ -82,11 +82,16 @@ jobs:
 
       - name: Extract Git Commit Info
         id: commit-hash
-        run: echo "COMMIT_HASH=$(echo $GITHUB_SHA | cut -c1-7)" >> $GITHUB_OUTPUT
+        run: |
+          echo "COMMIT_HASH=$(echo $GITHUB_SHA | cut -c1-7)" >> $GITHUB_OUTPUT
+          echo "COMMIT_HASH=$(echo $GITHUB_SHA | cut -c1-7)" >> $GITHUB_ENV
 
       - name: Get Release Tag (Current Date)
         id: release-tag
-        run: echo "RELEASE_TAG=$(date +%Y-%m-%d)" >> $GITHUB_OUTPUT
+        run: |
+          echo "RELEASE_TAG=$(date +%Y-%m-%d)" >> $GITHUB_OUTPUT
+          echo "RELEASE_TAG=$(date +%Y-%m-%d)" >> $GITHUB_ENV
+
 
       - name: Checkout CI Scripts Repository
         uses: actions/checkout@v4
@@ -112,8 +117,16 @@ jobs:
           COMMIT_HASH: ${{ steps.commit-hash.outputs.COMMIT_HASH }}
           RELEASE_TAG: ${{ steps.release-tag.outputs.RELEASE_TAG }}
         run: |
-          echo "COMMIT_HASH=${{ steps.commit-hash.outputs.COMMIT_HASH }}"
-          echo "RELEASE_TAG=${{ steps.release-tag.outputs.RELEASE_TAG }}"
+          echo "DEBUG: COMMIT_HASH=${{ env.COMMIT_HASH }}"
+          echo "DEBUG: RELEASE_TAG=${{ env.RELEASE_TAG }}"
+
+          if ("${{ env.COMMIT_HASH }}" -eq "") {
+            echo "❌ ERROR: COMMIT_HASH is empty!"; exit 1
+          }
+
+          if ("${{ env.RELEASE_TAG }}" -eq "") {
+            echo "❌ ERROR: RELEASE_TAG is empty!"; exit 1
+          }
 
           python ci-scripts/update_excel_metadata.py
 
