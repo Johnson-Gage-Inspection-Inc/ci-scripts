@@ -79,39 +79,10 @@ jobs:
       COMMIT_HASH: ${{ needs.re-validate.outputs.COMMIT_HASH }}
       RELEASE_TAG: ${{ needs.re-validate.outputs.RELEASE_TAG }}
     steps:
-      - name: Download Office Deployment Tool
+      - name: Install Microsoft Excel via Winget
         shell: pwsh
         run: |
-          Invoke-WebRequest -Uri "https://download.microsoft.com/download/8/2/5/82539cc5-bba5-4a76-8708-8c1338d7c042/officedeploymenttool_16026-20294.exe" -OutFile "$env:RUNNER_TEMP\officedeploymenttool.exe"
-          Start-Process -FilePath "$env:RUNNER_TEMP\officedeploymenttool.exe" -ArgumentList "/quiet /extract:$env:RUNNER_TEMP\ODT" -NoNewWindow -Wait
-
-      - name: Create Office Configuration XML
-        shell: pwsh
-        run: |
-          @'
-          <Configuration>
-              <Add OfficeClientEdition="64">
-                  <Product ID="O365BusinessRetail">
-                      <Language ID="en-us"/>
-                      <ExcludeApp ID="Access"/>
-                      <ExcludeApp ID="Publisher"/>
-                      <ExcludeApp ID="OneNote"/>
-                      <ExcludeApp ID="Outlook"/>
-                      <ExcludeApp ID="PowerPoint"/>
-                      <ExcludeApp ID="Skype"/>
-                      <ExcludeApp ID="Teams"/>
-                      <ExcludeApp ID="Word"/>
-                  </Product>
-              </Add>
-              <Display Level="None" AcceptEULA="TRUE"/>
-              <Property Name="AUTOACTIVATE" Value="1"/>
-          </Configuration>
-          '@ | Set-Content -Path "$env:RUNNER_TEMP\ODT\config.xml"
-
-      - name: Install Excel
-        shell: pwsh
-        run: |
-          Start-Process -FilePath "$env:RUNNER_TEMP\ODT\setup.exe" -ArgumentList "/configure $env:RUNNER_TEMP\ODT\config.xml" -NoNewWindow -Wait
+          winget install --id Microsoft.Office.Excel -e --silent --accept-package-agreements --accept-source-agreements
 
       - name: Verify Excel Installation
         run: |
