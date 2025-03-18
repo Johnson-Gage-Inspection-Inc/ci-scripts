@@ -73,7 +73,7 @@ jobs:
   update-excel-metadata:
     needs: re-validate
     if: needs.re-validate.outputs.UPLOAD == 'true'
-    runs-on: windows-2019
+    runs-on: windows-2022
     env:
       EXCEL_FILE: ${{ needs.re-validate.outputs.EXCEL_FILE }}
       COMMIT_HASH: ${{ needs.re-validate.outputs.COMMIT_HASH }}
