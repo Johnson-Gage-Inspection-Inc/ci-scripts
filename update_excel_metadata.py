@@ -57,6 +57,6 @@ try:
         f.write(f"EXCEL_FILE={modified_file}\n")
 
 except Exception as e:
-    print(f"❌ Error updating file: {e}")
+    print(f"Error updating file: {e}")
     workbook.Close(SaveChanges=False)
     excel.Quit()
