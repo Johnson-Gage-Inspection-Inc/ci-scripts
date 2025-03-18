@@ -79,21 +79,6 @@ jobs:
       COMMIT_HASH: ${{ needs.re-validate.outputs.COMMIT_HASH }}
       RELEASE_TAG: ${{ needs.re-validate.outputs.RELEASE_TAG }}
     steps:
-      - name: Install Microsoft Excel via Click-to-Run
-        shell: pwsh
-        run: |
-          Start-Process -FilePath "C:\Program Files\Common Files\Microsoft Shared\ClickToRun\OfficeC2RClient.exe" -ArgumentList "/configure Excel /quiet /norestart" -NoNewWindow -Wait
-
-      - name: Verify Excel Installation
-        run: |
-          Get-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*' | Where-Object { $_.DisplayName -like "*Excel*" }
-        shell: pwsh
-
-      - name: Register Excel for COM
-        shell: pwsh
-        run: |
-          Start-Process -FilePath "C:\Program Files\Microsoft Office\root\Office16\EXCEL.EXE" -ArgumentList "/regserver" -NoNewWindow -Wait
-
       - name: Checkout repository
         uses: actions/checkout@v4
 
