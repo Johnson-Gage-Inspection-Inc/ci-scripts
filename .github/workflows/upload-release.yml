@@ -71,6 +71,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Set clock to central time (Windows)
+        run: |
+          tzutil /s "Central Standard Time"
+        shell: pwsh
+
       - name: Install Python dependencies
         run: pip install pywin32
 
@@ -80,16 +85,11 @@ jobs:
 
       - name: Extract Git Commit Info
         id: commit-hash
-        run: echo "COMMIT_HASH=$(echo $GITHUB_SHA | cut -c1-7)" >> $GITHUB_ENV
-
-      - name: Set clock to central time (Windows)
-        run: |
-          tzutil /s "Central Standard Time"
-        shell: pwsh
+        run: echo "COMMIT_HASH=$(echo $GITHUB_SHA | cut -c1-7)" >> $GITHUB_OUTPUT
 
       - name: Get Release Tag (Current Date)
         id: release-tag
-        run: echo "RELEASE_TAG=$(date +%Y-%m-%d)" >> $GITHUB_ENV
+        run: echo "RELEASE_TAG=$(date +%Y-%m-%d)" >> $GITHUB_OUTPUT
 
       - name: Checkout CI Scripts Repository
         uses: actions/checkout@v4
@@ -102,9 +102,9 @@ jobs:
         shell: pwsh
         env:
           EXCEL_FILE: ${{ needs.re-validate.outputs.EXCEL_FILE }}
+          COMMIT_HASH: ${{ steps.commit-hash.outputs.COMMIT_HASH }}
+          RELEASE_TAG: ${{ steps.release-tag.outputs.RELEASE_TAG }}
         run: |
-          echo "COMMIT_HASH=${{ env.COMMIT_HASH }}" >> $env:GITHUB_ENV
-          echo "RELEASE_TAG=${{ env.RELEASE_TAG }}" >> $env:GITHUB_ENV
           python ci-scripts/update_excel_metadata.py
 
       - name: Upload Modified Excel File
