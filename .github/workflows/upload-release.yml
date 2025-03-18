@@ -109,15 +109,12 @@ jobs:
         shell: pwsh
         env:
           EXCEL_FILE: ${{ needs.re-validate.outputs.EXCEL_FILE }}
+          COMMIT_HASH: ${{ steps.commit-hash.outputs.COMMIT_HASH }}
+          RELEASE_TAG: ${{ steps.release-tag.outputs.RELEASE_TAG }}
         run: |
-          echo "COMMIT_HASH=${{ steps.commit-hash.outputs.COMMIT_HASH }}" >> $env:GITHUB_ENV
-          echo "RELEASE_TAG=${{ steps.release-tag.outputs.RELEASE_TAG }}" >> $env:GITHUB_ENV
-
-          # Debugging: Print values
           echo "COMMIT_HASH=${{ steps.commit-hash.outputs.COMMIT_HASH }}"
           echo "RELEASE_TAG=${{ steps.release-tag.outputs.RELEASE_TAG }}"
 
-          # Run the Python script, now with correctly set env variables
           python ci-scripts/update_excel_metadata.py
 
       - name: Upload Modified Excel File
