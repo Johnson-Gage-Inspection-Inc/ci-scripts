@@ -123,6 +123,9 @@ jobs:
             echo "ERROR: RELEASE_TAG is empty!"; exit 1
           }
           python ci-scripts/update_excel_metadata.py
+          
+          # Set the output variable for the Excel file path
+          echo "EXCEL_FILE=${{ env.EXCEL_FILE }}" | Out-File -Append -FilePath $env:GITHUB_OUTPUT
 
       - name: Upload Modified Excel File
         uses: actions/upload-artifact@v4
