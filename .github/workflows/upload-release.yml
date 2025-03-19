@@ -124,6 +124,12 @@ jobs:
           }
           python ci-scripts/update_excel_metadata.py
 
+      - name: Upload Modified Excel File
+        uses: actions/upload-artifact@v4
+        with:
+          name: updated-excel
+          path: ${{ steps.modify.outputs.EXCEL_FILE }}
+
   sync-to-sharepoint:
     needs: [update-excel-metadata, re-validate]
     if: needs.re-validate.outputs.UPLOAD == 'true'
