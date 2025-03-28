@@ -7,7 +7,7 @@ source "$(dirname "$0")/auth_and_prepare.sh"
 echo "✅ Pre-merge validation passed!"
 
 # Get the current date in the format MM/DD/YYYY
-current_date=$(date +"%m/%d/%Y")
+current_date=$(TZ="America/Chicago" date +"%m/%d/%Y")
 
 echo "✅ Current date: $current_date"
 
