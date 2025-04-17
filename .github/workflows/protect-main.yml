@@ -18,7 +18,7 @@ jobs:
 
       - name: Set up GitHub CLI
         run: |
-          gh auth login --with-token <<< "${{ secrets.GITHUB_TOKEN }}"
+          echo "${{ secrets.PERSONAL_ACCESS_TOKEN }}" | gh auth login --with-token
 
       - name: Get list of xl-* repositories
         id: list-repos
