@@ -123,7 +123,7 @@ jobs:
             echo "ERROR: RELEASE_TAG is empty!"; exit 1
           }
           python ci-scripts/update_excel_metadata.py
-          
+
           # Set the output variable for the Excel file path
           echo "EXCEL_FILE=${{ env.EXCEL_FILE }}" | Out-File -Append -FilePath $env:GITHUB_OUTPUT
 
@@ -292,7 +292,7 @@ jobs:
             fi
             PR_BODY_ESCAPED=$(echo "$PR_BODY" | jq -Rs '.')
             echo "✅ PR Body Retrieved."
-            echo "PR_BODY=$PR_BODY_ESCAPED" >> "$GITHUB_OUTPUT"
+            printf 'PR_BODY=%s\n' "$PR_BODY_ESCAPED" >> "$GITHUB_OUTPUT"
           fi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -302,7 +302,7 @@ jobs:
         run: |
           COMMIT_MSG=$(git log -1 --pretty=%B)
           COMMIT_MSG_ESCAPED=$(echo "$COMMIT_MSG" | jq -Rs '.')
-          echo "COMMIT_MSG=$COMMIT_MSG_ESCAPED" >> "$GITHUB_OUTPUT"
+          printf 'COMMIT_MSG=%s\n' "$COMMIT_MSG_ESCAPED" >> "$GITHUB_OUTPUT"
 
       - name: Determine Release Body
         id: release_body
@@ -318,18 +318,21 @@ jobs:
           fi
 
           # Ensure proper escaping for GitHub Actions output
-          {
-            echo "RELEASE_BODY<<EOF"
-            echo "$RELEASE_BODY"
-            echo "EOF"
-          } >> "$GITHUB_OUTPUT"
+          if [[ -z "$PR_BODY" || "$PR_BODY" == "\"\"" ]]; then
+            FINAL="$COMMIT_MSG"
+          else
+            FINAL="$PR_BODY"
+          fi
+
+          # THIS IS THE IMPORTANT FIX
+          printf 'RELEASE_BODY=%s\n' "$FINAL" >> "$GITHUB_OUTPUT"
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
         with:
           tag_name: ${{ needs.re-validate.outputs.RELEASE_TAG }}
           generate_release_notes: true
-          body: ${{ steps.release_body.outputs.RELEASE_BODY }}
+          body: ${{ fromJson(steps.release_body.outputs.RELEASE_BODY) }}
           files: "${{ needs.rename-file.outputs.RENAMED_FILE }}"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
