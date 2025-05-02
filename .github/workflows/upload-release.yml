@@ -283,9 +283,12 @@ jobs:
             PR_BODY=$(gh pr view "$PR_NUMBER" --json body --jq '.body' || echo "")
           fi
 
-          printf "%s\n" "PR_BODY<<EOF" >> "$GITHUB_OUTPUT"
-          printf "%s\n" "$PR_BODY" >> "$GITHUB_OUTPUT"
-          printf "%s\n" "EOF" >> "$GITHUB_OUTPUT"
+          {
+            echo "PR_BODY<<EOF"
+            echo "$PR_BODY"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
