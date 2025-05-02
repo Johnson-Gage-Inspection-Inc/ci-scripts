@@ -283,11 +283,7 @@ jobs:
             PR_BODY=$(gh pr view "$PR_NUMBER" --json body --jq '.body' || echo "")
           fi
 
-          {
-            echo "PR_BODY<<EOF"
-            echo "$PR_BODY"
-            echo "EOF"
-          } >> "$GITHUB_OUTPUT"
+          printf "PR_BODY<<EOF\n%s\nEOF\n" "$PR_BODY" >> "$GITHUB_OUTPUT"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -295,11 +291,7 @@ jobs:
         id: commit_message
         run: |
           COMMIT_MSG=$(git log -1 --pretty=%B)
-          {
-            echo "COMMIT_MSG<<EOF"
-            echo "$COMMIT_MSG"
-            echo "EOF"
-          } >> "$GITHUB_OUTPUT"
+          printf "COMMIT_MSG<<EOF\n%s\nEOF\n" "$COMMIT_MSG" >> "$GITHUB_OUTPUT"
 
       - name: Determine Release Body
         id: release_body
@@ -307,17 +299,13 @@ jobs:
           PR_BODY=${{ steps.pr_body.outputs.PR_BODY }}
           COMMIT_MSG=${{ steps.commit_message.outputs.COMMIT_MSG }}
 
-          if [[ -z "$PR_BODY" || "$PR_BODY" == "\"\"" ]]; then
+          if [[ -z "$PR_BODY" || "$PR_BODY" == '""' ]]; then
             FINAL="$COMMIT_MSG"
           else
             FINAL="$PR_BODY"
           fi
 
-          {
-            echo "RELEASE_BODY<<EOF"
-            echo "$FINAL"
-            echo "EOF"
-          } >> "$GITHUB_OUTPUT"
+          printf "RELEASE_BODY<<EOF\n%s\nEOF\n" "$FINAL" >> "$GITHUB_OUTPUT"
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
