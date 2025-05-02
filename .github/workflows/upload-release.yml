@@ -284,7 +284,12 @@ jobs:
           fi
 
           PR_BODY_ESCAPED=$(jq -Rn --arg body "$PR_BODY" '$body')
-          echo "PR_BODY=$PR_BODY_ESCAPED" >> "$GITHUB_OUTPUT"
+          {
+            echo "PR_BODY<<EOF"
+            echo "$PR_BODY_ESCAPED"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
