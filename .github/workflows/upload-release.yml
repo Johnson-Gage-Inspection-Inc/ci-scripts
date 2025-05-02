@@ -299,13 +299,15 @@ jobs:
           PR_BODY=${{ steps.pr_body.outputs.PR_BODY }}
           COMMIT_MSG=${{ steps.commit_message.outputs.COMMIT_MSG }}
 
-          if [[ -z "$PR_BODY" || "$PR_BODY" == '""' ]]; then
-            FINAL="$COMMIT_MSG"
+          if [[ -z "$PR_BODY" || "$PR_BODY" == "\"\"" ]]; then
+            RELEASE_BODY="$COMMIT_MSG"
           else
-            FINAL="$PR_BODY"
+            RELEASE_BODY="$PR_BODY"
           fi
 
-          printf "RELEASE_BODY<<EOF\n%s\nEOF\n" "$FINAL" >> "$GITHUB_OUTPUT"
+          # Properly escape for multiline using jq
+          ESCAPED=$(jq -Rn --arg str "$RELEASE_BODY" '$str')
+          echo "RELEASE_BODY=$ESCAPED" >> "$GITHUB_OUTPUT"
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
