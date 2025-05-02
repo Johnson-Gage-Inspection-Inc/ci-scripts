@@ -260,7 +260,7 @@ jobs:
           AUTHOR_NAME: ${{ github.actor }}
 
   create-github-release:
-    needs: [re-validate, rename-file, update-excel-metadata]
+    needs: [re-validate, update-excel-metadata, rename-file]
     if: needs.re-validate.outputs.UPLOAD == 'true'
     runs-on: ubuntu-latest
     steps:
@@ -282,8 +282,8 @@ jobs:
           else
             PR_BODY=$(gh pr view "$PR_NUMBER" --json body --jq '.body' || echo "")
           fi
-
-          printf "PR_BODY<<EOF\n%s\nEOF\n" "$PR_BODY" >> "$GITHUB_OUTPUT"
+          ESCAPED=$(jq -Rn --arg str "$PR_BODY" '$str')
+          echo "PR_BODY=$ESCAPED" >> "$GITHUB_OUTPUT"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -291,7 +291,8 @@ jobs:
         id: commit_message
         run: |
           COMMIT_MSG=$(git log -1 --pretty=%B)
-          printf "COMMIT_MSG<<EOF\n%s\nEOF\n" "$COMMIT_MSG" >> "$GITHUB_OUTPUT"
+          ESCAPED=$(jq -Rn --arg str "$COMMIT_MSG" '$str')
+          echo "COMMIT_MSG=$ESCAPED" >> "$GITHUB_OUTPUT"
 
       - name: Determine Release Body
         id: release_body
@@ -299,15 +300,11 @@ jobs:
           PR_BODY=${{ steps.pr_body.outputs.PR_BODY }}
           COMMIT_MSG=${{ steps.commit_message.outputs.COMMIT_MSG }}
 
-          if [[ -z "$PR_BODY" || "$PR_BODY" == "\"\"" ]]; then
-            RELEASE_BODY="$COMMIT_MSG"
+          if [[ -z "$PR_BODY" || "$PR_BODY" == '""' ]]; then
+            echo "RELEASE_BODY=$COMMIT_MSG" >> "$GITHUB_OUTPUT"
           else
-            RELEASE_BODY="$PR_BODY"
+            echo "RELEASE_BODY=$PR_BODY" >> "$GITHUB_OUTPUT"
           fi
-
-          # Properly escape for multiline using jq
-          ESCAPED=$(jq -Rn --arg str "$RELEASE_BODY" '$str')
-          echo "RELEASE_BODY=$ESCAPED" >> "$GITHUB_OUTPUT"
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
