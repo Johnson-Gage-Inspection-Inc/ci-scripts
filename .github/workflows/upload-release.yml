@@ -283,13 +283,11 @@ jobs:
             PR_BODY=$(gh pr view "$PR_NUMBER" --json body --jq '.body' || echo "")
           fi
 
-          PR_BODY_ESCAPED=$(jq -Rn --arg body "$PR_BODY" '$body')
           {
             echo "PR_BODY<<EOF"
-            echo "$PR_BODY_ESCAPED"
+            echo "$PR_BODY"
             echo "EOF"
           } >> "$GITHUB_OUTPUT"
-
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -297,8 +295,11 @@ jobs:
         id: commit_message
         run: |
           COMMIT_MSG=$(git log -1 --pretty=%B)
-          COMMIT_MSG_ESCAPED=$(jq -Rn --arg msg "$COMMIT_MSG" '$msg')
-          echo "COMMIT_MSG=$COMMIT_MSG_ESCAPED" >> "$GITHUB_OUTPUT"
+          {
+            echo "COMMIT_MSG<<EOF"
+            echo "$COMMIT_MSG"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Determine Release Body
         id: release_body
@@ -307,17 +308,23 @@ jobs:
           COMMIT_MSG=${{ steps.commit_message.outputs.COMMIT_MSG }}
 
           if [[ -z "$PR_BODY" || "$PR_BODY" == "\"\"" ]]; then
-            echo "RELEASE_BODY=$COMMIT_MSG" >> "$GITHUB_OUTPUT"
+            FINAL="$COMMIT_MSG"
           else
-            echo "RELEASE_BODY=$PR_BODY" >> "$GITHUB_OUTPUT"
+            FINAL="$PR_BODY"
           fi
+
+          {
+            echo "RELEASE_BODY<<EOF"
+            echo "$FINAL"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
         with:
           tag_name: ${{ needs.re-validate.outputs.RELEASE_TAG }}
           generate_release_notes: true
-          body: ${{ fromJson(steps.release_body.outputs.RELEASE_BODY) }}
+          body: ${{ steps.release_body.outputs.RELEASE_BODY }}
           files: "${{ needs.rename-file.outputs.RENAMED_FILE }}"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
