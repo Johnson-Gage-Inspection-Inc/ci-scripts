@@ -314,7 +314,7 @@ jobs:
         with:
           tag_name: ${{ needs.re-validate.outputs.RELEASE_TAG }}
           generate_release_notes: true
-          body: ${{ steps.release_body.outputs.RELEASE_BODY }}
+          body: ${{ fromJson(steps.release_body.outputs.RELEASE_BODY) }}
           files: "${{ needs.rename-file.outputs.RENAMED_FILE }}"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
