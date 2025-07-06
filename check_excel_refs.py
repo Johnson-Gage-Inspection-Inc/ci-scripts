@@ -10,6 +10,7 @@ from pathlib import Path
 import openpyxl
 from openpyxl.cell.cell import Cell
 from openpyxl.utils.exceptions import InvalidFileException
+from openpyxl.worksheet.formula import ArrayFormula
 
 
 def export_sheets_with_formulas(xlsx_path: Path, output_dir: Path):
@@ -60,15 +61,39 @@ def check_ref_errors(file_path: Path):
             # Check all cells in the sheet
             for row in sheet.iter_rows():
                 for cell in row:
-                    if cell.value and isinstance(cell.value, str):
-                        if "#REF!" in str(cell.value):
-                            ref_errors.append(
-                                {
-                                    "sheet": sheet_name,
-                                    "cell": cell.coordinate,
-                                    "formula": cell.value,
-                                }
-                            )
+                    # Check both the cell value and formula
+                    cell_value = cell.value
+                    has_ref_error = False
+
+                    # Check if cell has a value and contains #REF!
+                    if cell_value and isinstance(cell_value, str):
+                        if "#REF!" in str(cell_value):
+                            has_ref_error = True
+
+                    # For formula cells, also check the formula itself
+                    if cell.data_type == "f" and cell_value:
+                        if isinstance(cell_value, ArrayFormula):
+                            formula = str(cell_value.text)
+                        else:
+                            formula = str(cell_value)
+                        if "#REF!" in formula:
+                            has_ref_error = True
+
+                    if has_ref_error:
+                        # Format the formula for display
+                        formula_display = str(cell_value)
+                        if hasattr(cell_value, "text"):
+                            formula_display = cell_value.text
+                        elif hasattr(cell_value, "__str__"):
+                            formula_display = str(cell_value)
+
+                        ref_errors.append(
+                            {
+                                "sheet": sheet_name,
+                                "cell": cell.coordinate,
+                                "formula": formula_display,
+                            }
+                        )
 
         workbook.close()
         return ref_errors
@@ -105,6 +130,7 @@ def main():
     excel_file = os.environ.get("EXCEL_FILE")
     export_sheets = os.environ.get("EXPORT_SHEETS", "false").lower() == "true"
 
+    assert excel_file != "C:/Users/JeffHall/git/xl-test/Book1.xltm"
     if not excel_file and len(sys.argv) > 1:
         excel_file = sys.argv[1]
 
@@ -126,10 +152,16 @@ def main():
         print(f"❌ Unsupported file type: {file_path.suffix}")
         sys.exit(1)
 
-    print(f"🔍 Checking {file_path.name} for #REF! errors...")
+    print(f"[CHECK] Checking {file_path.name} for #REF! errors...")
+
+    # Add debug flag
+    debug = os.environ.get("DEBUG_EXCEL", "false").lower() == "true"
 
     # Check for #REF! errors
     ref_errors = check_ref_errors(file_path)
+
+    if debug:
+        print(f"Debug: Found {len(ref_errors) if ref_errors else 0} errors")
 
     if ref_errors is None:
         sys.exit(1)
@@ -147,7 +179,7 @@ def main():
 
     # Export sheets if requested
     if export_sheets:
-        print("📊 Exporting sheets with formulas...")
+        print("[EXPORT] Exporting sheets with formulas...")
         delete_existing_exploded()
 
         exploded_root = Path("exploded") / file_path.stem
