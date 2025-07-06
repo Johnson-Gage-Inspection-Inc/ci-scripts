@@ -21,12 +21,18 @@ def export_sheets_with_formulas(xlsx_path: Path, output_dir: Path):
     for sheet in wb.worksheets:
 
         def get_formula_or_value(c: Cell) -> str:
+            """Get the formula or value from a cell, handling all types."""
             val = c.value
-            if c.data_type == "f":
-                return val if isinstance(val, str) else val.text
-            raise ValueError(
-                f"Unsupported cell type: {c.data_type} in cell {c.coordinate}"
-            )
+
+            # Handle different cell types
+            if c.data_type == "f":  # Formula
+                if isinstance(val, ArrayFormula):
+                    return val.text if val.text else ""
+                return str(val) if val is not None else ""
+            elif val is None:
+                return ""
+            else:
+                return str(val)
 
         csv_path = output_dir / f"{sheet.title}.csv"
         with open(csv_path, "w", newline="", encoding="utf-8") as f:
@@ -51,12 +57,16 @@ def export_sheets_with_formulas(xlsx_path: Path, output_dir: Path):
 def check_ref_errors(file_path: Path):
     """Check for #REF! errors in Excel file."""
     try:
+        print(f"DEBUG: Loading workbook from {file_path}")
         # Load workbook
         workbook = openpyxl.load_workbook(file_path, data_only=False)
         ref_errors = []
+        
+        print(f"DEBUG: Found {len(workbook.sheetnames)} sheets")
 
         # Check each worksheet
         for sheet_name in workbook.sheetnames:
+            print(f"DEBUG: Checking sheet '{sheet_name}'")
             sheet = workbook[sheet_name]
 
             # Check all cells in the sheet
@@ -97,13 +107,17 @@ def check_ref_errors(file_path: Path):
                         )
 
         workbook.close()
+        print(f"DEBUG: Completed checking, found {len(ref_errors)} errors")
         return ref_errors
 
-    except InvalidFileException:
-        print(f"❌ Error: {file_path} is not a valid Excel file")
+    except InvalidFileException as e:
+        print(f"❌ Error: {file_path} is not a valid Excel file: {e}")
         return None
     except Exception as e:
         print(f"❌ Error reading {file_path}: {str(e)}")
+        print(f"DEBUG: Exception type: {type(e)}")
+        import traceback
+        traceback.print_exc()
         return None
 
 
@@ -139,6 +153,8 @@ def main():
             "❌ No Excel file specified. Set EXCEL_FILE environment "
             "variable or pass as argument."
         )
+        print(f"DEBUG: EXCEL_FILE env var = {os.environ.get('EXCEL_FILE')}")
+        print(f"DEBUG: sys.argv = {sys.argv}")
         sys.exit(1)
 
     file_path = Path(excel_file)
@@ -153,9 +169,14 @@ def main():
         sys.exit(1)
 
     print(f"[CHECK] Checking {file_path.name} for #REF! errors...")
+    print(f"DEBUG: File path: {file_path}")
+    print(f"DEBUG: File exists: {file_path.exists()}")
+    file_size = file_path.stat().st_size if file_path.exists() else 'N/A'
+    print(f"DEBUG: File size: {file_size}")
 
     # Add debug flag
     debug = os.environ.get("DEBUG_EXCEL", "false").lower() == "true"
+    print(f"DEBUG: Debug mode: {debug}")
 
     # Check for #REF! errors
     ref_errors = check_ref_errors(file_path)
