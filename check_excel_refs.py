@@ -106,10 +106,10 @@ def check_ref_errors(file_path: Path):
         return ref_errors
 
     except InvalidFileException as e:
-        print(f"❌ Error: {file_path} is not a valid Excel file: {e}")
+        print(f"ERROR: {file_path} is not a valid Excel file: {e}")
         return None
     except Exception as e:
-        print(f"❌ Error reading {file_path}: {str(e)}")
+        print(f"ERROR: Error reading {file_path}: {str(e)}")
         return None
 
 
@@ -142,7 +142,7 @@ def main():
 
     if not excel_file:
         print(
-            "❌ No Excel file specified. Set EXCEL_FILE environment "
+            "ERROR: No Excel file specified. Set EXCEL_FILE environment "
             "variable or pass as argument."
         )
         sys.exit(1)
@@ -150,12 +150,12 @@ def main():
     file_path = Path(excel_file)
 
     if not file_path.exists():
-        print(f"❌ File not found: {file_path}")
+        print(f"ERROR: File not found: {file_path}")
         sys.exit(1)
 
     supported_extensions = {".xlsx", ".xltm", ".xlsm", ".xltx", ".xlsb"}
     if file_path.suffix.lower() not in supported_extensions:
-        print(f"❌ Unsupported file type: {file_path.suffix}")
+        print(f"ERROR: Unsupported file type: {file_path.suffix}")
         sys.exit(1)
 
     print(f"[CHECK] Checking {file_path.name} for #REF! errors...")
@@ -180,16 +180,16 @@ def main():
     if ref_errors is None:
         sys.exit(1)
     elif len(ref_errors) > 0:
-        print(f"❌ Found {len(ref_errors)} #REF! errors:")
+        print(f"ERROR: Found {len(ref_errors)} #REF! errors:")
         for error in ref_errors:
             sheet = error["sheet"]
             cell = error["cell"]
             formula = error["formula"]
             print(f"  - Sheet '{sheet}', Cell {cell}: {formula}")
-        print("\n❌ Please fix broken references before merging.")
+        print("\nERROR: Please fix broken references before merging.")
         sys.exit(1)
     else:
-        print("✅ No #REF! errors found.")
+        print("SUCCESS: No #REF! errors found.")
 
     # Export sheets if requested
     if export_sheets:
@@ -201,11 +201,11 @@ def main():
 
         try:
             export_sheets_with_formulas(file_path, sheets_dir)
-            print(f"✅ Sheets exported to: {sheets_dir}")
+            print(f"SUCCESS: Sheets exported to: {sheets_dir}")
         except Exception as e:
-            print(f"⚠️ Warning: Failed to export sheets: {str(e)}")
+            print(f"WARNING: Failed to export sheets: {str(e)}")
 
-    print("✅ Excel validation completed successfully.")
+    print("SUCCESS: Excel validation completed successfully.")
     sys.exit(0)
 
 
