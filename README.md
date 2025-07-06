@@ -7,14 +7,20 @@ This repository serves as a central location for shared CI/CD scripts that can b
 - **Seamless Integration**: Easily referenced in GitHub Actions workflows.
 - **Secure Authentication**: Uses GitHub Secrets for storing credentials.
 - **Automated SOP File Upload**: Detects changes in Excel files and uploads them to Qualer.
+- **Excel Reference Validation**: Checks for broken references (#REF! errors) before allowing merge.
 
 ---
 
 ## 📂 Repository Structure
 ```
 ci-scripts/
-│── upload_sop.sh   # Main script for uploading SOP files to Qualer
-│── README.md       # Documentation
+│── upload_sop.sh          # Main script for uploading SOP files to Qualer
+│── check_excel_refs.py    # Script to check for #REF! errors in Excel files
+│── auth_and_prepare.sh    # Shared authentication & file preparation
+│── validate_upload.sh     # Pre-merge validation script
+│── main-protection.json   # Branch protection configuration
+│── requirements.txt       # Python dependencies
+│── README.md              # Documentation
 ```
 
 ---
@@ -105,6 +111,46 @@ To update the script:
 - **Workflow Fails Due to Authentication?** Ensure `QUALER_EMAIL` and `QUALER_PASSWORD` are set as GitHub Secrets.
 - **CSRF Token Extraction Issues?** If the authentication process changes, update the script accordingly.
 - **No `.xlsm` File Changes Detected?** Confirm that the modified file types match the workflow’s `changed-files` filter.
+
+---
+
+## 🔍 Excel Reference Validation
+
+The `check_excel_refs.py` script automatically validates Excel files for broken references before allowing PRs to be merged.
+
+### What it checks:
+- **#REF! errors**: Detects broken cell references in formulas
+- **All worksheets**: Scans every sheet in the workbook
+- **Formula preservation**: Optionally exports sheets with formulas intact
+
+### How it works:
+1. **Automatic Integration**: Runs as part of the pre-check workflow
+2. **Blocking**: Prevents merge if any #REF! errors are found
+3. **Detailed Reporting**: Shows exact location of each broken reference
+
+### Manual Usage:
+```bash
+# Check a specific Excel file
+python check_excel_refs.py /path/to/file.xlsx
+
+# Or use environment variable
+export EXCEL_FILE="/path/to/file.xlsx"
+python check_excel_refs.py
+
+# Export sheets with formulas for analysis
+export EXPORT_SHEETS="true"
+python check_excel_refs.py
+```
+
+### Output Example:
+```
+🔍 Checking MyFile.xlsx for #REF! errors...
+❌ Found 2 #REF! errors:
+  - Sheet 'Summary', Cell B5: =SUM(#REF!)
+  - Sheet 'Data', Cell C10: =#REF!*2
+
+❌ Please fix broken references before merging.
+```
 
 ---
 
