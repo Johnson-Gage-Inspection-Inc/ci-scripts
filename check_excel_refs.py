@@ -57,16 +57,12 @@ def export_sheets_with_formulas(xlsx_path: Path, output_dir: Path):
 def check_ref_errors(file_path: Path):
     """Check for #REF! errors in Excel file."""
     try:
-        print(f"DEBUG: Loading workbook from {file_path}")
         # Load workbook
         workbook = openpyxl.load_workbook(file_path, data_only=False)
         ref_errors = []
-        
-        print(f"DEBUG: Found {len(workbook.sheetnames)} sheets")
 
         # Check each worksheet
         for sheet_name in workbook.sheetnames:
-            print(f"DEBUG: Checking sheet '{sheet_name}'")
             sheet = workbook[sheet_name]
 
             # Check all cells in the sheet
@@ -107,7 +103,6 @@ def check_ref_errors(file_path: Path):
                         )
 
         workbook.close()
-        print(f"DEBUG: Completed checking, found {len(ref_errors)} errors")
         return ref_errors
 
     except InvalidFileException as e:
@@ -115,9 +110,6 @@ def check_ref_errors(file_path: Path):
         return None
     except Exception as e:
         print(f"❌ Error reading {file_path}: {str(e)}")
-        print(f"DEBUG: Exception type: {type(e)}")
-        import traceback
-        traceback.print_exc()
         return None
 
 
@@ -153,8 +145,6 @@ def main():
             "❌ No Excel file specified. Set EXCEL_FILE environment "
             "variable or pass as argument."
         )
-        print(f"DEBUG: EXCEL_FILE env var = {os.environ.get('EXCEL_FILE')}")
-        print(f"DEBUG: sys.argv = {sys.argv}")
         sys.exit(1)
 
     file_path = Path(excel_file)
@@ -169,14 +159,17 @@ def main():
         sys.exit(1)
 
     print(f"[CHECK] Checking {file_path.name} for #REF! errors...")
-    print(f"DEBUG: File path: {file_path}")
-    print(f"DEBUG: File exists: {file_path.exists()}")
-    file_size = file_path.stat().st_size if file_path.exists() else 'N/A'
-    print(f"DEBUG: File size: {file_size}")
 
     # Add debug flag
     debug = os.environ.get("DEBUG_EXCEL", "false").lower() == "true"
-    print(f"DEBUG: Debug mode: {debug}")
+
+    if debug:
+        print(f"DEBUG: File path: {file_path}")
+        print(f"DEBUG: File exists: {file_path.exists()}")
+        file_size = file_path.stat().st_size if file_path.exists() else "N/A"
+        print(f"DEBUG: File size: {file_size}")
+        print(f"DEBUG: EXCEL_FILE env var = {os.environ.get('EXCEL_FILE')}")
+        print(f"DEBUG: sys.argv = {sys.argv}")
 
     # Check for #REF! errors
     ref_errors = check_ref_errors(file_path)
