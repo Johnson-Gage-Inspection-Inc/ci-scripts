@@ -20,12 +20,13 @@ def export_sheets_with_formulas(xlsx_path: Path, output_dir: Path):
 
     for sheet in wb.worksheets:
 
-        def get_formula_or_value(cell: Cell) -> str:
-            val = cell.value
-            if cell.data_type == "f":
+        def get_formula_or_value(c: Cell) -> str:
+            val = c.value
+            if c.data_type == "f":
                 return val if isinstance(val, str) else val.text
-            else:
-                return val
+            raise ValueError(
+                f"Unsupported cell type: {c.data_type} in cell {c.coordinate}"
+            )
 
         csv_path = output_dir / f"{sheet.title}.csv"
         with open(csv_path, "w", newline="", encoding="utf-8") as f:
