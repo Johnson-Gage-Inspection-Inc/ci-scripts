@@ -149,13 +149,13 @@ def main():
 
     file_path = Path(excel_file)
 
-    if not file_path.exists():
-        print(f"ERROR: File not found: {file_path}")
-        sys.exit(1)
-
     supported_extensions = {".xlsx", ".xltm", ".xlsm", ".xltx", ".xlsb"}
     if file_path.suffix.lower() not in supported_extensions:
         print(f"ERROR: Unsupported file type: {file_path.suffix}")
+        sys.exit(1)
+
+    if not file_path.exists():
+        print(f"ERROR: File not found: {file_path}")
         sys.exit(1)
 
     print(f"[CHECK] Checking {file_path.name} for #REF! errors...")
