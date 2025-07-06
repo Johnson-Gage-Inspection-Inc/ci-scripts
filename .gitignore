@@ -4,3 +4,6 @@ sop_page.html
 upload_response.json
 update_response.json
 .env
+__pycache__/
+*.pyc
+exploded/
