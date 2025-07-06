@@ -184,3 +184,43 @@ jobs:
             echo "❌ Error: Failed to retrieve access token. Exiting."
             exit 1
           fi
+
+  validate-excel-references:
+    needs: validate-excel
+    if: needs.validate-excel.outputs.SKIP_UPLOAD != 'true'
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Load environment variables
+        run: |
+          echo "Loading environment variables from .env"
+          cat ".env" >> $GITHUB_ENV
+
+      - name: Checkout `ci-scripts` Repository
+        uses: actions/checkout@v3
+        with:
+          repository: Johnson-Gage-Inspection-Inc/ci-scripts
+          path: ci-scripts
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r ci-scripts/requirements.txt
+
+      - name: Make check_excel_refs.py executable
+        run: chmod +x ./ci-scripts/check_excel_refs.py
+
+      - name: Check for #REF! errors
+        run: python ./ci-scripts/check_excel_refs.py
+        env:
+          EXCEL_FILE: ${{ needs.validate-excel.outputs.EXCEL_FILE }}
+          EXPORT_SHEETS: 'false'
