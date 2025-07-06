@@ -131,7 +131,6 @@ def main():
     excel_file = os.environ.get("EXCEL_FILE")
     export_sheets = os.environ.get("EXPORT_SHEETS", "false").lower() == "true"
 
-    assert excel_file != "C:/Users/JeffHall/git/xl-test/Book1.xltm"
     if not excel_file and len(sys.argv) > 1:
         excel_file = sys.argv[1]
 
