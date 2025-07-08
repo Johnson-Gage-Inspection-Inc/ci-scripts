@@ -179,7 +179,7 @@ jobs:
 
           RESPONSE=$(curl -X PUT "$UPLOAD_URL" \
             -H "Authorization: Bearer $ACCESS_TOKEN" \
-            -H "Content-Type: application/octet-stream" \
+            -H "Content-Type: application/vnd.ms-excel.template.macroEnabled.12" \
             --data-binary @"$FILE_PATH")
 
           echo "SharePoint API Response: $RESPONSE"
