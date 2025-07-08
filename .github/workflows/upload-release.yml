@@ -174,12 +174,29 @@ jobs:
           FILE_PATH="${{ needs.re-validate.outputs.EXCEL_FILE }}"
           FILE_NAME=$(basename "$FILE_PATH" | sed 's/ /%20/g')
           echo "FILE_NAME=$FILE_NAME" # Debugging step
+          
+          # Determine content type based on file extension
+          FILE_EXT="${FILE_PATH##*.}"
+          case "$FILE_EXT" in
+            "xltm")
+              CONTENT_TYPE="application/vnd.ms-excel.template.macroEnabled.12"
+              ;;
+            "xltx")
+              CONTENT_TYPE="application/vnd.openxmlformats-officedocument.spreadsheetml.template"
+              ;;
+            *)
+              echo "Warning: Unknown file extension '$FILE_EXT'. Using default content type."
+              CONTENT_TYPE="application/octet-stream"
+              ;;
+          esac
+          echo "Content-Type: $CONTENT_TYPE" # Debugging step
+          
           DRIVE_ID="b!62zY21rTlkyTbN2E9veLub0A9-qfsQ1LmVs-siAwkjUpikiIFZhHTb5VFJuc7Xng"
           UPLOAD_URL="https://graph.microsoft.com/v1.0/drives/$DRIVE_ID/root:/$FILE_NAME:/content"
 
           RESPONSE=$(curl -X PUT "$UPLOAD_URL" \
             -H "Authorization: Bearer $ACCESS_TOKEN" \
-            -H "Content-Type: application/octet-stream" \
+            -H "Content-Type: $CONTENT_TYPE" \
             --data-binary @"$FILE_PATH")
 
           echo "SharePoint API Response: $RESPONSE"
