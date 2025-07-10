@@ -68,7 +68,7 @@ def check_ref_errors(file_path: Path):
         # Check each worksheet
         for sheet_name in workbook.sheetnames:
             sheet = workbook[sheet_name]
-            
+
             # Skip if this is not a worksheet (e.g., chartsheet)
             if not isinstance(sheet, Worksheet):
                 continue
