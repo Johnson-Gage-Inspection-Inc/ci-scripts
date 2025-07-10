@@ -62,7 +62,7 @@ def setup_test_environment(tmp_path: Path, monkeypatch) -> None:
     monkeypatch.chdir(tmp_path)
 
     # Ensure no leftover temp files
-    temp_dirs = ["tmp_unzipped", "exploded", "output"]
+    temp_dirs = ["tmp_unzipped", "exploded", "output", "extracted"]
     for temp_dir in temp_dirs:
         temp_path = tmp_path / temp_dir
         if temp_path.exists():
