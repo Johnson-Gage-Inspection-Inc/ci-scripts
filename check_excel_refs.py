@@ -11,6 +11,7 @@ import openpyxl
 from openpyxl.cell.cell import Cell
 from openpyxl.utils.exceptions import InvalidFileException
 from openpyxl.worksheet.formula import ArrayFormula
+from openpyxl.worksheet.worksheet import Worksheet
 
 
 def export_sheets_with_formulas(xlsx_path: Path, output_dir: Path):
@@ -19,6 +20,9 @@ def export_sheets_with_formulas(xlsx_path: Path, output_dir: Path):
     output_dir.mkdir(parents=True, exist_ok=True)
 
     for sheet in wb.worksheets:
+        # Skip if this is not a worksheet (e.g., chartsheet)
+        if not isinstance(sheet, Worksheet):
+            continue
 
         def get_formula_or_value(c: Cell) -> str:
             """Get the formula or value from a cell, handling all types."""
@@ -64,6 +68,10 @@ def check_ref_errors(file_path: Path):
         # Check each worksheet
         for sheet_name in workbook.sheetnames:
             sheet = workbook[sheet_name]
+            
+            # Skip if this is not a worksheet (e.g., chartsheet)
+            if not isinstance(sheet, Worksheet):
+                continue
 
             # Check all cells in the sheet
             for row in sheet.iter_rows():
