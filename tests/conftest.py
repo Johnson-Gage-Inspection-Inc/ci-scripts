@@ -1,5 +1,6 @@
 """Pytest configuration and fixtures."""
 
+import shutil
 from pathlib import Path
 from typing import Generator
 
@@ -66,6 +67,5 @@ def setup_test_environment(tmp_path: Path, monkeypatch) -> None:
     for temp_dir in temp_dirs:
         temp_path = tmp_path / temp_dir
         if temp_path.exists():
-            import shutil
 
             shutil.rmtree(temp_path)
