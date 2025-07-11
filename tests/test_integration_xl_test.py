@@ -329,15 +329,6 @@ class TestXLIntegration:
 
     def test_ci_scripts_detect_broken_references(self):
         """Test CI scripts can detect broken Excel references."""
-        # Skip if running in CI matrix to avoid parallel PR creation
-        if (
-            os.environ.get("CI") == "true"
-            and os.environ.get("FORCE_INTEGRATION") != "true"
-        ):
-            pytest.skip(
-                "Skipping integration test in CI matrix to avoid parallel PR conflicts"
-            )
-
         timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
         python_version = f"{sys.version_info.major}{sys.version_info.minor}"
         branch_name = f"ci-test-broken-py{python_version}-{timestamp}"
