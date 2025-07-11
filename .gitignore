@@ -10,3 +10,5 @@ exploded/
 ~$*.xltm
 ~$*.xltx
 .coverage
+htmlcov/
+.pytest_cache/

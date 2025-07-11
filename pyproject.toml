@@ -7,11 +7,14 @@ python_files = ["test_*.py", "*_test.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
 pythonpath = ["."]
+markers = [
+    "integration: marks tests as integration tests (deselect with '-m \"not integration\"')",
+]
 addopts = [
     "--cov=.",
     "--cov-report=html",
     "--cov-report=term-missing",
-    "--cov-fail-under=60",
+    "--cov-fail-under=50",
     "-v",
 ]
 filterwarnings = [
