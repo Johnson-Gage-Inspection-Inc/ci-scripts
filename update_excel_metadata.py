@@ -29,7 +29,7 @@ def _customUnzip(input_excel, tmp_dir):
     return infos
 
 
-def _infuseMetadata(commit_hash: str | None = None, release_tag: str | None = None):
+def _infuseMetadata(commit_hash: Optional[str] = None, release_tag: Optional[str] = None):
     # Register namespaces so ElementTree uses the desired prefixes.
     ET.register_namespace(
         "cp", "http://schemas.openxmlformats.org/package/2006/metadata/core-properties"
