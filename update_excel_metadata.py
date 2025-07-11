@@ -12,10 +12,6 @@ def assignMetadataToExcel(input_file: str, commit_hash: str, release_tag: str):
     infos = _customUnzip(input_file, TMP_DIR)
     _infuseMetadata(commit_hash, release_tag)
     _customZip(input_file, TMP_DIR, infos)
-    tmp_dir = "tmp_unzipped"
-    infos = _customUnzip(input_file, tmp_dir)
-    _infuseMetadata(commit_hash, release_tag)
-    _customZip(input_file, tmp_dir, infos)
 
 
 def _customZip(output_file, tmp_dir, infos):
