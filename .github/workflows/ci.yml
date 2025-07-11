@@ -42,13 +42,14 @@ jobs:
 
     - name: Test with pytest
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GITHUB_TOKEN: ${{ secrets.INTEGRATION_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
       run: |
         # Only run integration tests on Python 3.11 to avoid parallel PR creation
         if [ "${{ matrix.python-version }}" = "3.11" ]; then
           export SKIP_INTEGRATION=false
           echo "Running integration tests on Python 3.11"
           echo "GITHUB_TOKEN is set: $([[ -n \"$GITHUB_TOKEN\" ]] && echo 'yes' || echo 'no')"
+          echo "Using integration token: $([[ -n \"${{ secrets.INTEGRATION_GITHUB_TOKEN }}\" ]] && echo 'yes' || echo 'no')"
           echo "SKIP_INTEGRATION=$SKIP_INTEGRATION"
         else
           export SKIP_INTEGRATION=true
