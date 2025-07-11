@@ -198,7 +198,12 @@ class XLTestIntegration:
         start_time = time.time()
         print(f"Waiting for CI checks on PR #{pr_number}...")
 
+        # Start with shorter polling interval for faster response
+        poll_interval = 15  # Start with 15s, increase to 30s later
+        checks_started = False
+
         while time.time() - start_time < timeout:
+            elapsed = int(time.time() - start_time)
             status_info = self.get_pull_request_status(pr_number)
             pr_data = status_info["pr"]
 
@@ -224,14 +229,30 @@ class XLTestIntegration:
             check_runs = status_info["checks"]["check_runs"]
 
             print(
-                f"Status: {status_state}, Check runs: {len(check_runs)}, Mergeable: {pr_data.get('mergeable', 'unknown')}"
+                f"[{elapsed}s] Status: {status_state}, Check runs: {len(check_runs)}, Mergeable: {pr_data.get('mergeable', 'unknown')}"
             )
 
             # If we have check runs, check their status
             if check_runs:
+                checks_started = True
                 all_completed = all(run["status"] == "completed" for run in check_runs)
+
+                # Show progress details
+                running_checks = [
+                    run["name"] for run in check_runs if run["status"] != "completed"
+                ]
+                if running_checks:
+                    print(f"  Running checks: {', '.join(running_checks)}")
+
                 if all_completed:
                     success = all(run["conclusion"] == "success" for run in check_runs)
+                    failed_checks = [
+                        run["name"]
+                        for run in check_runs
+                        if run["conclusion"] != "success"
+                    ]
+                    if failed_checks:
+                        print(f"  Failed checks: {', '.join(failed_checks)}")
                     print(f"All checks completed. Success: {success}")
                     return success
 
@@ -241,9 +262,12 @@ class XLTestIntegration:
                 print(f"Legacy status completed. Success: {success}")
                 return success
 
-            # Wait before checking again
-            print("Checks still running, waiting 30 seconds...")
-            time.sleep(30)
+            # Adaptive polling: use longer intervals once checks are running
+            if checks_started:
+                poll_interval = 30
+
+            print(f"Checks still running, waiting {poll_interval} seconds...")
+            time.sleep(poll_interval)
 
         raise GitHubIntegrationError(
             f"Timeout waiting for CI checks on PR #{pr_number}"
@@ -364,7 +388,8 @@ class TestXLIntegration:
 
             # Phase 2: Wait for broken PR to fail, then close it
             print("=== Waiting for broken PR to fail ===")
-            broken_success = self.xl_test.wait_for_checks(broken_pr_number, timeout=300)
+            # Use shorter timeout for broken PR since we expect it to fail quickly
+            broken_success = self.xl_test.wait_for_checks(broken_pr_number, timeout=240)
             assert (
                 not broken_success
             ), f"CI checks should have failed for broken PR #{broken_pr_number}"
@@ -378,7 +403,8 @@ class TestXLIntegration:
 
             # Phase 3: Now merge the valid PR (should have clean merge)
             print("=== Processing valid PR (should merge cleanly) ===")
-            valid_success = self.xl_test.wait_for_checks(valid_pr_number, timeout=300)
+            # Use longer timeout for valid PR to allow for complete CI pipeline
+            valid_success = self.xl_test.wait_for_checks(valid_pr_number, timeout=360)
             assert valid_success, f"CI checks failed for valid PR #{valid_pr_number}"
             print(f"✅ CI passed for valid Excel file in PR #{valid_pr_number}")
 
