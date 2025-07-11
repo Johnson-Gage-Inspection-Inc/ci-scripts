@@ -7,3 +7,6 @@ update_response.json
 __pycache__/
 *.pyc
 exploded/
+~$*.xltm
+~$*.xltx
+.coverage
