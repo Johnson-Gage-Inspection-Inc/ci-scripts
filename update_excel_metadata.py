@@ -1,7 +1,7 @@
 import os
-import zipfile
 import shutil
 import xml.etree.ElementTree as ET
+import zipfile
 
 
 def assignMetadataToExcel(input_file: str, commit_hash: str, release_tag: str):
@@ -29,7 +29,7 @@ def _customUnzip(input_excel, tmp_dir):
     return infos
 
 
-def _infuseMetadata(commit_hash: str = None, release_tag: str = None):
+def _infuseMetadata(commit_hash: str | None = None, release_tag: str | None = None):
     # Register namespaces so ElementTree uses the desired prefixes.
     ET.register_namespace(
         "cp", "http://schemas.openxmlformats.org/package/2006/metadata/core-properties"

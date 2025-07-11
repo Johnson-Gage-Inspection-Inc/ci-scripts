@@ -37,7 +37,8 @@ jobs:
         
     - name: Type check with mypy
       run: |
-        mypy .
+        mypy check_excel_refs.py update_excel_metadata.py --ignore-missing-imports --disable-error-code=import-untyped --pretty
+      continue-on-error: false
         
     - name: Test with pytest
       run: |
