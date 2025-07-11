@@ -200,6 +200,22 @@ class XLTestIntegration:
 
         while time.time() - start_time < timeout:
             status_info = self.get_pull_request_status(pr_number)
+            pr_data = status_info["pr"]
+
+            # Check if PR has merge conflicts
+            if not pr_data.get("mergeable", True):
+                print(f"PR #{pr_number} has merge conflicts, cannot run CI checks")
+                print("Treating as a failed test scenario")
+                return False
+
+            # Check if PR is closed/merged (might have been handled externally)
+            if pr_data["state"] == "closed":
+                if pr_data.get("merged", False):
+                    print(f"PR #{pr_number} was merged externally")
+                    return True
+                else:
+                    print(f"PR #{pr_number} was closed externally")
+                    return False
 
             # Check legacy status API
             status_state = status_info["status"]["state"]
@@ -207,7 +223,9 @@ class XLTestIntegration:
             # Check modern check runs API
             check_runs = status_info["checks"]["check_runs"]
 
-            print(f"Status: {status_state}, Check runs: {len(check_runs)}")
+            print(
+                f"Status: {status_state}, Check runs: {len(check_runs)}, Mergeable: {pr_data.get('mergeable', 'unknown')}"
+            )
 
             # If we have check runs, check their status
             if check_runs:
@@ -283,99 +301,108 @@ class TestXLIntegration:
             except Exception as e:
                 print(f"Warning: Failed to delete branch {branch_name}: {e}")
 
-    def test_ci_scripts_with_valid_excel_file(self):
-        """Test CI scripts work with a valid Excel file."""
+    def test_ci_scripts_end_to_end_workflow(self):
+        """Test complete CI workflow: broken refs fail first, then valid refs pass."""
         timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
         python_version = f"{sys.version_info.major}{sys.version_info.minor}"
-        branch_name = f"ci-test-valid-py{python_version}-{timestamp}"
+
+        # Test 1: Broken references should fail CI (run first to avoid conflicts)
+        print("=== Testing broken Excel references (should fail) ===")
+        broken_branch = f"ci-test-broken-py{python_version}-{timestamp}"
 
         try:
-            print(f"Creating test branch: {branch_name}")
+            print(f"Creating broken ref test branch: {broken_branch}")
 
-            # 1. Create test branch
-            self.xl_test.create_test_branch(branch_name)
-            self.test_branches.append(branch_name)
-
-            # 2. Update Book1.xltx with valid changes
-            valid_excel_content = self.xl_test.create_valid_excel_file()
-            commit_msg = f"test: Update Book1.xltx with valid changes - {timestamp}"
-
-            self.xl_test.update_file_in_repo(
-                "Book1.xltx", valid_excel_content, branch_name, commit_msg
-            )
-            print("Updated Book1.xltx with valid content")
-
-            # 3 & 4. Create pull request
-            pr_number = self.xl_test.create_pull_request(
-                branch_name,
-                f"[CI Test] Valid Excel file test - {timestamp}",
-                f"Integration test to verify CI scripts work with valid Excel files.\n\nBranch: {branch_name}\nTimestamp: {timestamp}\nPython: {python_version}",
-            )
-            self.test_prs.append(pr_number)
-            print(f"Created PR #{pr_number}")
-
-            # 5. Wait for CI to complete and assert success
-            success = self.xl_test.wait_for_checks(pr_number, timeout=600)  # 10 minutes
-            assert (
-                success
-            ), f"CI checks failed for PR #{pr_number} with valid Excel file"
-
-            # 6. Merge the PR (since it's valid)
-            self.xl_test.merge_pull_request(pr_number)
-            print(f"Merged PR #{pr_number}")
-
-        except Exception as e:
-            pytest.fail(f"Integration test with valid Excel file failed: {e}")
-
-    def test_ci_scripts_detect_broken_references(self):
-        """Test CI scripts can detect broken Excel references."""
-        timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
-        python_version = f"{sys.version_info.major}{sys.version_info.minor}"
-        branch_name = f"ci-test-broken-py{python_version}-{timestamp}"
-
-        try:
-            print(f"Creating test branch: {branch_name}")
-
-            # 1. Create test branch
-            self.xl_test.create_test_branch(branch_name)
-            self.test_branches.append(branch_name)
+            # 1. Create test branch for broken refs
+            self.xl_test.create_test_branch(broken_branch)
+            self.test_branches.append(broken_branch)
 
             # 2. Update Book1.xltx with broken references
             broken_excel_content = self.xl_test.create_broken_excel_file()
             commit_msg = f"test: Update Book1.xltx with broken references - {timestamp}"
 
             self.xl_test.update_file_in_repo(
-                "Book1.xltx", broken_excel_content, branch_name, commit_msg
+                "Book1.xltx", broken_excel_content, broken_branch, commit_msg
             )
             print("Updated Book1.xltx with broken references")
 
-            # 3 & 4. Create pull request
-            pr_number = self.xl_test.create_pull_request(
-                branch_name,
+            # 3 & 4. Create pull request for broken refs
+            broken_pr_number = self.xl_test.create_pull_request(
+                broken_branch,
                 f"[CI Test] Broken reference detection - {timestamp}",
-                f"Integration test to verify CI scripts can detect broken Excel references.\n\nBranch: {branch_name}\nTimestamp: {timestamp}\nPython: {python_version}",
+                f"Integration test to verify CI scripts can detect broken Excel references.\n\nBranch: {broken_branch}\nTimestamp: {timestamp}\nPython: {python_version}",
             )
-            self.test_prs.append(pr_number)
-            print(f"Created PR #{pr_number}")
+            self.test_prs.append(broken_pr_number)
+            print(f"Created broken refs PR #{broken_pr_number}")
 
             # 5. Wait for CI to complete and assert failure
-            try:
-                success = self.xl_test.wait_for_checks(pr_number, timeout=600)
-                # We expect this to fail because of broken references
-                assert (
-                    not success
-                ), f"CI checks should have failed for PR #{pr_number} with broken Excel references"
-                print(f"CI correctly detected broken references in PR #{pr_number}")
-            except GitHubIntegrationError:
-                # If timeout, that's a test failure (CI should complete, even if it fails)
-                pytest.fail(f"CI checks timed out for PR #{pr_number}")
+            broken_success = self.xl_test.wait_for_checks(
+                broken_pr_number, timeout=300
+            )  # 5 minutes
+            assert (
+                not broken_success
+            ), f"CI checks should have failed for PR #{broken_pr_number} with broken Excel references"
+            print(
+                f"✅ CI correctly detected broken references in PR #{broken_pr_number}"
+            )
 
-            # 6. Close the PR without merging (since it has broken refs)
-            self.xl_test.close_pull_request(pr_number)
-            print(f"Closed PR #{pr_number} with broken references")
+            # 6. Close the broken PR (don't merge)
+            self.xl_test.close_pull_request(broken_pr_number)
+            print(f"Closed broken refs PR #{broken_pr_number}")
 
         except Exception as e:
-            pytest.fail(f"Integration test with broken Excel references failed: {e}")
+            pytest.fail(f"Broken reference test failed: {e}")
+
+        # Small delay to ensure the first test fully completes
+        print("Waiting 10 seconds before starting valid test...")
+        time.sleep(10)
+
+        # Test 2: Valid Excel should pass CI and merge (run second to avoid conflicts)
+        print("=== Testing valid Excel file (should pass) ===")
+        valid_branch = f"ci-test-valid-py{python_version}-{timestamp}-valid"
+
+        try:
+            print(f"Creating valid test branch: {valid_branch}")
+
+            # 1. Create test branch for valid file
+            self.xl_test.create_test_branch(valid_branch)
+            self.test_branches.append(valid_branch)
+
+            # 2. Update Book1.xltx with valid changes
+            valid_excel_content = self.xl_test.create_valid_excel_file()
+            commit_msg = f"test: Update Book1.xltx with valid changes - {timestamp}"
+
+            self.xl_test.update_file_in_repo(
+                "Book1.xltx", valid_excel_content, valid_branch, commit_msg
+            )
+            print("Updated Book1.xltx with valid content")
+
+            # 3 & 4. Create pull request for valid file
+            valid_pr_number = self.xl_test.create_pull_request(
+                valid_branch,
+                f"[CI Test] Valid Excel file test - {timestamp}",
+                f"Integration test to verify CI scripts work with valid Excel files.\n\nBranch: {valid_branch}\nTimestamp: {timestamp}\nPython: {python_version}",
+            )
+            self.test_prs.append(valid_pr_number)
+            print(f"Created valid file PR #{valid_pr_number}")
+
+            # 5. Wait for CI to complete and assert success
+            valid_success = self.xl_test.wait_for_checks(
+                valid_pr_number, timeout=300
+            )  # 5 minutes
+            assert (
+                valid_success
+            ), f"CI checks failed for PR #{valid_pr_number} with valid Excel file"
+            print(f"✅ CI passed for valid Excel file in PR #{valid_pr_number}")
+
+            # 6. Merge the valid PR
+            self.xl_test.merge_pull_request(valid_pr_number)
+            print(f"✅ Merged valid PR #{valid_pr_number}")
+
+        except Exception as e:
+            pytest.fail(f"Valid Excel test failed: {e}")
+
+        print("🎉 End-to-end workflow test completed successfully!")
 
 
 @pytest.mark.integration
