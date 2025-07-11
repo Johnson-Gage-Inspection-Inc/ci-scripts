@@ -2,7 +2,7 @@ name: CI/CD Pipeline
 
 on:
   push:
-    branches: [ main, develop, testing ]
+    branches: [ main, develop, testing, dev ]
   pull_request:
     branches: [ main, develop ]
 
@@ -42,8 +42,14 @@ jobs:
 
     - name: Test with pytest
       run: |
-        # Include integration tests, to ensure the pipeline works before mergine
-        export SKIP_INTEGRATION=false
+        # Only run integration tests on Python 3.11 to avoid parallel PR creation
+        if [ "${{ matrix.python-version }}" = "3.11" ]; then
+          export SKIP_INTEGRATION=false
+          echo "Running integration tests on Python 3.11"
+        else
+          export SKIP_INTEGRATION=true
+          echo "Skipping integration tests on Python ${{ matrix.python-version }}"
+        fi
         pytest --cov=. --cov-report=xml --cov-report=term-missing
 
     - name: Upload coverage to Codecov

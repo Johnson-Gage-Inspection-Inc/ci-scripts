@@ -62,10 +62,13 @@ pytest tests/test_integration_xl_test.py::TestXLIntegration -v
 
 ### CI Integration
 
-In the main CI pipeline, integration tests are skipped by default to avoid creating unnecessary PRs. They can be enabled by:
+In the main CI pipeline, integration tests are skipped by default to avoid creating unnecessary PRs and prevent conflicts from the Python version matrix (which would try to create 4 parallel PRs). They can be enabled by:
 
 1. Setting `GITHUB_TOKEN` in CI secrets
-2. Not setting `SKIP_INTEGRATION=true`
+2. Setting `FORCE_INTEGRATION=true` to override the CI skip logic
+3. Removing `SKIP_INTEGRATION=true` from the workflow
+
+**Note**: When enabled in CI matrix, each Python version will create separate branches with version-specific names (e.g., `ci-test-valid-py38-20250711-143022`) to avoid conflicts.
 
 ### Troubleshooting
 
