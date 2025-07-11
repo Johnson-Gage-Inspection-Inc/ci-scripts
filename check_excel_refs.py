@@ -8,7 +8,6 @@ import sys
 from pathlib import Path
 
 import openpyxl
-from openpyxl.cell.cell import Cell
 from openpyxl.utils.exceptions import InvalidFileException
 from openpyxl.worksheet.formula import ArrayFormula
 from openpyxl.worksheet.worksheet import Worksheet
@@ -24,12 +23,16 @@ def export_sheets_with_formulas(xlsx_path: Path, output_dir: Path):
         if not isinstance(sheet, Worksheet):
             continue
 
-        def get_formula_or_value(c: Cell) -> str:
+        def get_formula_or_value(c) -> str:
             """Get the formula or value from a cell, handling all types."""
+            # Handle MergedCell case
+            if not hasattr(c, "value"):
+                return ""
+
             val = c.value
 
             # Handle different cell types
-            if c.data_type == "f":  # Formula
+            if hasattr(c, "data_type") and c.data_type == "f":  # Formula
                 if isinstance(val, ArrayFormula):
                     return val.text if val.text else ""
                 return str(val) if val is not None else ""
@@ -68,7 +71,11 @@ def check_ref_errors(file_path: Path):
         # Check each worksheet
         for sheet_name in workbook.sheetnames:
             sheet = workbook[sheet_name]
-            
+
+            # Skip if this is not a worksheet (e.g., chartsheet)
+            if not isinstance(sheet, Worksheet):
+                continue
+
             # Skip if this is not a worksheet (e.g., chartsheet)
             if not isinstance(sheet, Worksheet):
                 continue
