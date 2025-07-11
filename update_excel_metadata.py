@@ -4,8 +4,14 @@ import xml.etree.ElementTree as ET
 import zipfile
 from typing import Optional
 
+# Define a module-level constant for the temporary directory
+TMP_DIR = "tmp_unzipped"
+
 
 def assignMetadataToExcel(input_file: str, commit_hash: str, release_tag: str):
+    infos = _customUnzip(input_file, TMP_DIR)
+    _infuseMetadata(commit_hash, release_tag)
+    _customZip(input_file, TMP_DIR, infos)
     tmp_dir = "tmp_unzipped"
     infos = _customUnzip(input_file, tmp_dir)
     _infuseMetadata(commit_hash, release_tag)
@@ -41,7 +47,7 @@ def _infuseMetadata(
     ET.register_namespace("dcterms", "http://purl.org/dc/terms/")
     ET.register_namespace("dcmitype", "http://purl.org/dc/dcmitype/")
 
-    core_xml_path = os.path.join("tmp_unzipped", "docProps", "core.xml")
+    core_xml_path = os.path.join(TMP_DIR, "docProps", "core.xml")
     with open(core_xml_path, "r", encoding="utf-8", errors="replace") as file:
         core_xml = file.read()
 
@@ -95,4 +101,5 @@ def main():
 
 
 if __name__ == "__main__":
+    main()
     main()
