@@ -5,7 +5,9 @@ Check for #REF! errors in Excel files and export sheets with formulas.
 import csv
 import os
 import sys
+import zipfile
 from pathlib import Path
+from typing import Any, Dict, List
 
 import openpyxl
 from openpyxl.utils.exceptions import InvalidFileException
@@ -61,12 +63,101 @@ def export_sheets_with_formulas(xlsx_path: Path, output_dir: Path):
                 f.truncate()
 
 
+def _safe_str(val: Any) -> str:
+    try:
+        return "" if val is None else str(val)
+    except Exception:
+        return ""
+
+
+def _scan_defined_names_for_ref(
+    wb: "openpyxl.Workbook",
+) -> List[Dict[str, str]]:
+    errors: List[Dict[str, str]] = []
+    try:
+        for dn in getattr(wb, "defined_names", []) or []:
+            # dn.attr_text holds the textual formula/range
+            txt = _safe_str(getattr(dn, "attr_text", None))
+            if "#REF!" in txt:
+                errors.append(
+                    {
+                        "sheet": "<defined-name>",
+                        "cell": _safe_str(getattr(dn, "name", "<unnamed>")),
+                        "formula": txt,
+                    }
+                )
+    except Exception:
+        # Best-effort; ignore parsing issues
+        pass
+    return errors
+
+
+def _scan_data_validations_for_ref(ws: Worksheet) -> List[Dict[str, str]]:
+    errors: List[Dict[str, str]] = []
+    try:
+        dv_list = (
+            getattr(
+                getattr(ws, "data_validations", None),
+                "dataValidation",
+                [],
+            )
+            or []
+        )
+        for dv in dv_list:
+            # Check formula1/formula2 and sqref strings
+            for attr in ("formula1", "formula2", "sqref"):
+                txt = _safe_str(getattr(dv, attr, None))
+                if "#REF!" in txt:
+                    errors.append(
+                        {
+                            "sheet": ws.title,
+                            "cell": _safe_str(attr),
+                            "formula": txt,
+                        }
+                    )
+    except Exception:
+        pass
+    return errors
+
+
+def _scan_zip_for_ref_tokens(xlsx_path: Path) -> List[Dict[str, str]]:
+    """
+    Scan the underlying XLSX/XLSM/XLTM zip parts for literal '#REF!' tokens.
+    This catches references present in XML (charts, conditional formatting,
+    defined names, etc.) that may not surface via openpyxl objects.
+    """
+    findings: List[Dict[str, str]] = []
+    try:
+        with zipfile.ZipFile(xlsx_path, "r") as zf:
+            for name in zf.namelist():
+                # Only inspect Excel XML parts
+                if not name.startswith("xl/") or not name.endswith(".xml"):
+                    continue
+                try:
+                    data = zf.read(name)
+                except Exception:
+                    continue
+                if b"#REF!" in data:
+                    findings.append(
+                        {
+                            "sheet": "<xml>",
+                            "cell": name,
+                            "formula": "#REF! found in XML part",
+                        }
+                    )
+    except Exception:
+        # If the file isn't a zip (like xlsb) or read error, ignore; other
+        # checks will handle detection.
+        pass
+    return findings
+
+
 def check_ref_errors(file_path: Path):
     """Check for #REF! errors in Excel file."""
     try:
         # Load workbook
-        workbook = openpyxl.load_workbook(file_path, data_only=False)
-        ref_errors = []
+        workbook = openpyxl.load_workbook(file_path, data_only=False, keep_links=False)
+        ref_errors: List[Dict[str, str]] = []
 
         # Check each worksheet
         for sheet_name in workbook.sheetnames:
@@ -89,25 +180,25 @@ def check_ref_errors(file_path: Path):
 
                     # Check if cell has a value and contains #REF!
                     if cell_value and isinstance(cell_value, str):
-                        if "#REF!" in str(cell_value):
+                        if "#REF!" in cell_value:
                             has_ref_error = True
 
                     # For formula cells, also check the formula itself
-                    if cell.data_type == "f" and cell_value:
+                    if cell.data_type == "f":
+                        formula = ""
                         if isinstance(cell_value, ArrayFormula):
-                            formula = str(cell_value.text)
+                            formula = _safe_str(cell_value.text)
                         else:
-                            formula = str(cell_value)
+                            formula = _safe_str(cell_value)
                         if "#REF!" in formula:
                             has_ref_error = True
 
                     if has_ref_error:
                         # Format the formula for display
-                        formula_display = str(cell_value)
-                        if hasattr(cell_value, "text"):
-                            formula_display = cell_value.text
-                        elif hasattr(cell_value, "__str__"):
-                            formula_display = str(cell_value)
+                        if isinstance(cell_value, ArrayFormula):
+                            formula_display = _safe_str(cell_value.text)
+                        else:
+                            formula_display = _safe_str(cell_value)
 
                         ref_errors.append(
                             {
@@ -116,6 +207,15 @@ def check_ref_errors(file_path: Path):
                                 "formula": formula_display,
                             }
                         )
+
+            # Check data validations on the sheet
+            ref_errors.extend(_scan_data_validations_for_ref(sheet))
+
+        # Check defined names at workbook level
+        ref_errors.extend(_scan_defined_names_for_ref(workbook))
+
+        # Fallback: scan raw XML parts for literal '#REF!'
+        ref_errors.extend(_scan_zip_for_ref_tokens(file_path))
 
         workbook.close()
         return ref_errors
