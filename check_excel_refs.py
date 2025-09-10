@@ -4,6 +4,7 @@ Check for #REF! errors in Excel files and export sheets with formulas.
 """
 import csv
 import os
+import re
 import sys
 import zipfile
 from pathlib import Path
@@ -211,24 +212,21 @@ def check_ref_errors(file_path: Path):
         # Build a set of worksheet titles that already have errors
         errored_sheets = {e.get("sheet") for e in ref_errors}
 
-        # Map worksheet xml name -> title for filtering
-        sheet_xml_to_title: Dict[str, str] = {}
-        for ws in workbook.worksheets:
-            # Use the actual worksheet XML part name (ws._path) and its
-            # 'xl/'-prefixed variant to match zip member names
-            rel = getattr(ws, "_path", "") or ""
-            if rel:
-                sheet_xml_to_title[rel] = ws.title
-                sheet_xml_to_title[f"xl/{rel}"] = ws.title
-
         # Only include XML hits that are not duplicates of already-detected
         # worksheet errors. Keep non-worksheet xml (e.g., charts, workbook).
+        sheet_re = re.compile(r"(?:^|/)worksheets/sheet(\d+)\.xml$")
         for hit in xml_hits:
             part = hit.get("cell", "")
-            if part in sheet_xml_to_title:
-                title = sheet_xml_to_title[part]
-                if title in errored_sheets:
-                    continue  # skip duplicate for a sheet that already has errors
+            m = sheet_re.search(part)
+            if m:
+                try:
+                    idx = int(m.group(1)) - 1
+                    if 0 <= idx < len(workbook.worksheets):
+                        title = workbook.worksheets[idx].title
+                        if title in errored_sheets:
+                            continue  # skip duplicate for a sheet that already has errors
+                except Exception:
+                    pass
             ref_errors.append(hit)
 
         workbook.close()
