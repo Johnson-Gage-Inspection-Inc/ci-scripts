@@ -208,7 +208,25 @@ def check_ref_errors(file_path: Path):
         ref_errors.extend(_scan_defined_names_for_ref(workbook))
 
         # Fallback: scan raw XML parts for literal '#REF!'
-        ref_errors.extend(_scan_zip_for_ref_tokens(file_path))
+        xml_hits = _scan_zip_for_ref_tokens(file_path)
+
+        # Build a set of worksheet titles that already have errors
+        errored_sheets = {e.get("sheet") for e in ref_errors}
+
+        # Map worksheet xml name -> title for filtering
+        sheet_xml_to_title: Dict[str, str] = {}
+        for idx, ws in enumerate(workbook.worksheets, start=1):
+            sheet_xml_to_title[f"xl/worksheets/sheet{idx}.xml"] = ws.title
+
+        # Only include XML hits that are not duplicates of already-detected
+        # worksheet errors. Keep non-worksheet xml (e.g., charts, workbook).
+        for hit in xml_hits:
+            part = hit.get("cell", "")
+            if part in sheet_xml_to_title:
+                title = sheet_xml_to_title[part]
+                if title in errored_sheets:
+                    continue  # skip duplicate for a sheet that already has errors
+            ref_errors.append(hit)
 
         workbook.close()
         return ref_errors
