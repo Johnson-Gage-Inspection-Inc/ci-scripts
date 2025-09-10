@@ -60,9 +60,16 @@ class TestCheckExcelRefsIntegration:
             if test_file.exists():
                 test_file.unlink()
 
-    def test_command_line_file_with_broken_refs(self):
+    @pytest.mark.parametrize(
+        "file_path",
+        [
+            "tests/test_files/has_broken_ref.xltm",
+            "tests/test_files/has_broken_ref2.xltm",
+        ],
+    )
+    def test_command_line_file_with_broken_refs(self, file_path):
         """Test: File with broken references - should detect them."""
-        test_file = Path("tests/test_files/has_broken_ref.xltm")
+        test_file = Path(file_path)
         if test_file.exists():
             result = subprocess.run(
                 [sys.executable, "check_excel_refs.py", str(test_file)],
