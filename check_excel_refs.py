@@ -95,14 +95,11 @@ def _scan_defined_names_for_ref(
 def _scan_data_validations_for_ref(ws: Worksheet) -> List[Dict[str, str]]:
     errors: List[Dict[str, str]] = []
     try:
-        dv_list = (
-            getattr(
-                getattr(ws, "data_validations", None),
-                "dataValidation",
-                [],
-            )
-            or []
-        )
+        data_validations = getattr(ws, "data_validations", None)
+        if data_validations is not None and hasattr(data_validations, "dataValidation"):
+            dv_list = data_validations.dataValidation or []
+        else:
+            dv_list = []
         for dv in dv_list:
             # Check formula1/formula2 and sqref strings
             for attr in ("formula1", "formula2", "sqref"):
@@ -167,10 +164,6 @@ def check_ref_errors(file_path: Path):
             if not isinstance(sheet, Worksheet):
                 continue
 
-            # Skip if this is not a worksheet (e.g., chartsheet)
-            if not isinstance(sheet, Worksheet):
-                continue
-
             # Check all cells in the sheet
             for row in sheet.iter_rows():
                 for cell in row:
@@ -185,12 +178,12 @@ def check_ref_errors(file_path: Path):
 
                     # For formula cells, also check the formula itself
                     if cell.data_type == "f":
-                        formula = ""
-                        if isinstance(cell_value, ArrayFormula):
-                            formula = _safe_str(cell_value.text)
-                        else:
-                            formula = _safe_str(cell_value)
-                        if "#REF!" in formula:
+                        raw = (
+                            cell_value.text
+                            if isinstance(cell_value, ArrayFormula)
+                            else cell_value
+                        )
+                        if "#REF!" in _safe_str(raw):
                             has_ref_error = True
 
                     if has_ref_error:
