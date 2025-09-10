@@ -214,8 +214,12 @@ def check_ref_errors(file_path: Path):
         # Map worksheet xml name -> title for filtering
         sheet_xml_to_title: Dict[str, str] = {}
         for ws in workbook.worksheets:
-            # Use the actual worksheet XML part name (ws._path) instead of a hardcoded pattern
-            sheet_xml_to_title[ws._path] = ws.title
+            # Use the actual worksheet XML part name (ws._path) and its
+            # 'xl/'-prefixed variant to match zip member names
+            rel = getattr(ws, "_path", "") or ""
+            if rel:
+                sheet_xml_to_title[rel] = ws.title
+                sheet_xml_to_title[f"xl/{rel}"] = ws.title
 
         # Only include XML hits that are not duplicates of already-detected
         # worksheet errors. Keep non-worksheet xml (e.g., charts, workbook).
