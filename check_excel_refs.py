@@ -95,11 +95,9 @@ def _scan_defined_names_for_ref(
 def _scan_data_validations_for_ref(ws: Worksheet) -> List[Dict[str, str]]:
     errors: List[Dict[str, str]] = []
     try:
-        data_validations = getattr(ws, "data_validations", None)
-        if data_validations is not None and hasattr(data_validations, "dataValidation"):
-            dv_list = data_validations.dataValidation or []
-        else:
-            dv_list = []
+        dv_list = (
+            getattr(getattr(ws, "data_validations", None), "dataValidation", []) or []
+        )
         for dv in dv_list:
             # Check formula1/formula2 and sqref strings
             for attr in ("formula1", "formula2", "sqref"):
@@ -215,8 +213,9 @@ def check_ref_errors(file_path: Path):
 
         # Map worksheet xml name -> title for filtering
         sheet_xml_to_title: Dict[str, str] = {}
-        for idx, ws in enumerate(workbook.worksheets, start=1):
-            sheet_xml_to_title[f"xl/worksheets/sheet{idx}.xml"] = ws.title
+        for ws in workbook.worksheets:
+            # Use the actual worksheet XML part name (ws._path) instead of a hardcoded pattern
+            sheet_xml_to_title[ws._path] = ws.title
 
         # Only include XML hits that are not duplicates of already-detected
         # worksheet errors. Keep non-worksheet xml (e.g., charts, workbook).
