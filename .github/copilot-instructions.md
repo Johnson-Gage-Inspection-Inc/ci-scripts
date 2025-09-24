@@ -88,7 +88,7 @@ These repos call the reusable workflows in this repo via `workflow_call` to vali
 
 #### xl-test variations from the generic examples
 
-`xl-test` intentionally differs  from the generic examples above:
+`xl-test` intentionally differs from the generic examples above:
 
 - Uses the `dev` ref of this repo for reusable workflows while iterating:
   - `uses: Johnson-Gage-Inspection-Inc/ci-scripts/.github/workflows/<workflow>.yml@dev`
