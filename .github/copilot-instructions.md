@@ -55,3 +55,62 @@ Goal: Help an AI coding agent be productive immediately in this repo by knowing 
 - How reusable workflows consume these scripts: `pre-check.yml` and `upload-release.yml`.
 
 If anything above is unclear (e.g., additional env vars a downstream repo expects), ask to confirm and we’ll amend this file.
+
+## Downstream usage examples (xl-test, xlTemplate)
+
+These repos call the reusable workflows in this repo via `workflow_call` to validate Excel changes on PRs and to upload/release on merge.
+
+- Pre-merge validation (in a caller repo like `xl-test` or `xlTemplate`):
+
+  ```yaml
+  name: Pre-Check Excel
+  on:
+    pull_request:
+      branches: [ main ]
+
+  jobs:
+    pre-check:
+      uses: Johnson-Gage-Inspection-Inc/ci-scripts/.github/workflows/pre-check.yml@main
+      with:
+        repo_name: ${{ github.repository }}
+        branch: main
+      secrets:
+        QUALER_EMAIL: ${{ secrets.QUALER_EMAIL }}
+        QUALER_PASSWORD: ${{ secrets.QUALER_PASSWORD }}
+        SHAREPOINT_CLIENT_ID: ${{ secrets.SHAREPOINT_CLIENT_ID }}
+        SHAREPOINT_CLIENT_SECRET: ${{ secrets.SHAREPOINT_CLIENT_SECRET }}
+        SHAREPOINT_TENANT_ID: ${{ secrets.SHAREPOINT_TENANT_ID }}
+  ```
+
+  Notes:
+  - The reusable workflow detects changed `*.xl*` files, ensures only one Excel file is present, and outputs `EXCEL_FILE`.
+  - `.env` in the caller repo should provide: `SOP_ID`, `DOC_ID`, `DOC_TITLE`, `DOC_DETAILS` (and optionally anything else you want in Qualer details).
+  - If no Excel files are changed, the job exits cleanly and sets `SKIP_UPLOAD=true` for downstream jobs.
+
+- Upload + Release on merge (in the caller repo after merging to `main`):
+
+  ```yaml
+  name: Upload & Release on Merge
+  on:
+    push:
+      branches: [ main ]
+
+  jobs:
+    upload-release:
+      uses: Johnson-Gage-Inspection-Inc/ci-scripts/.github/workflows/upload-release.yml@main
+      with:
+        repo_name: ${{ github.repository }}
+        branch: main
+      secrets:
+        QUALER_EMAIL: ${{ secrets.QUALER_EMAIL }}
+        QUALER_PASSWORD: ${{ secrets.QUALER_PASSWORD }}
+        SHAREPOINT_CLIENT_ID: ${{ secrets.SHAREPOINT_CLIENT_ID }}
+        SHAREPOINT_CLIENT_SECRET: ${{ secrets.SHAREPOINT_CLIENT_SECRET }}
+        SHAREPOINT_TENANT_ID: ${{ secrets.SHAREPOINT_TENANT_ID }}
+  ```
+
+  What happens:
+  - Re-validate Excel file change and compute `COMMIT_HASH` and `RELEASE_TAG`.
+  - Update Excel metadata on Windows (`update_excel_metadata.py`).
+  - Upload to SharePoint and to Qualer (`upload_sop.sh`) using secrets.
+  - Rename the file with date and create a GitHub Release with the renamed artifact.
