@@ -4,9 +4,7 @@ Check for #REF! errors in Excel files and export sheets with formulas.
 """
 import csv
 import os
-import re
 import sys
-import zipfile
 from pathlib import Path
 from typing import Any, Dict, List
 
@@ -116,38 +114,6 @@ def _scan_data_validations_for_ref(ws: Worksheet) -> List[Dict[str, str]]:
     return errors
 
 
-def _scan_zip_for_ref_tokens(xlsx_path: Path) -> List[Dict[str, str]]:
-    """
-    Scan the underlying XLSX/XLSM/XLTM zip parts for literal '#REF!' tokens.
-    This catches references present in XML (charts, conditional formatting,
-    defined names, etc.) that may not surface via openpyxl objects.
-    """
-    findings: List[Dict[str, str]] = []
-    try:
-        with zipfile.ZipFile(xlsx_path, "r") as zf:
-            for name in zf.namelist():
-                # Only inspect Excel XML parts
-                if not name.startswith("xl/") or not name.endswith(".xml"):
-                    continue
-                try:
-                    data = zf.read(name)
-                except Exception:
-                    continue
-                if b"#REF!" in data:
-                    findings.append(
-                        {
-                            "sheet": "<xml>",
-                            "cell": name,
-                            "formula": "#REF! found in XML part",
-                        }
-                    )
-    except Exception:
-        # If the file isn't a zip (like xlsb) or read error, ignore; other
-        # checks will handle detection.
-        pass
-    return findings
-
-
 def check_ref_errors(file_path: Path):
     """Check for #REF! errors in Excel file."""
     try:
@@ -205,29 +171,6 @@ def check_ref_errors(file_path: Path):
 
         # Check defined names at workbook level
         ref_errors.extend(_scan_defined_names_for_ref(workbook))
-
-        # Fallback: scan raw XML parts for literal '#REF!'
-        xml_hits = _scan_zip_for_ref_tokens(file_path)
-
-        # Build a set of worksheet titles that already have errors
-        errored_sheets = {e.get("sheet") for e in ref_errors}
-
-        # Only include XML hits that are not duplicates of already-detected
-        # worksheet errors. Keep non-worksheet xml (e.g., charts, workbook).
-        sheet_re = re.compile(r"(?:^|/)worksheets/sheet(\d+)\.xml$")
-        for hit in xml_hits:
-            part = hit.get("cell", "")
-            m = sheet_re.search(part)
-            if m:
-                try:
-                    idx = int(m.group(1)) - 1
-                    if 0 <= idx < len(workbook.worksheets):
-                        title = workbook.worksheets[idx].title
-                        if title in errored_sheets:
-                            continue  # skip duplicate for a sheet that already has errors
-                except Exception:
-                    pass
-            ref_errors.append(hit)
 
         workbook.close()
         return ref_errors
