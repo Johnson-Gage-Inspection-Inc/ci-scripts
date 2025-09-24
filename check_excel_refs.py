@@ -121,7 +121,18 @@ def _scan_zip_for_ref_tokens(xlsx_path: Path) -> List[Dict[str, str]]:
     Scan the underlying XLSX/XLSM/XLTM zip parts for literal '#REF!' tokens.
     This catches references present in XML (charts, conditional formatting,
     defined names, etc.) that may not surface via openpyxl objects.
+
+    Ignores XML control properties and other non-user-facing XML parts that
+    may contain #REF! errors that cannot be corrected through Excel.
     """
+    # XML paths to ignore - these are non-user-facing parts
+    ignored_xml_patterns = [
+        "xl/ctrlProps/",  # Control properties
+        "xl/metadata.xml",  # Metadata
+        "xl/persons/",  # Person metadata
+        "xl/threadedComments/",  # Threaded comments metadata
+    ]
+
     findings: List[Dict[str, str]] = []
     try:
         with zipfile.ZipFile(xlsx_path, "r") as zf:
@@ -129,6 +140,11 @@ def _scan_zip_for_ref_tokens(xlsx_path: Path) -> List[Dict[str, str]]:
                 # Only inspect Excel XML parts
                 if not name.startswith("xl/") or not name.endswith(".xml"):
                     continue
+
+                # Skip non-user-facing XML parts
+                if any(name.startswith(pattern) for pattern in ignored_xml_patterns):
+                    continue
+
                 try:
                     data = zf.read(name)
                 except Exception:

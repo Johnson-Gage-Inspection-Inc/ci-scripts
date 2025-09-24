@@ -294,6 +294,59 @@ class TestExportSheetsEdgeCases:
 class TestCheckRefErrorsDetailed:
     """Detailed unit tests for check_ref_errors function."""
 
+    def test_xml_filtering_ignores_ctrl_props(self, tmp_path):
+        """Test that _scan_zip_for_ref_tokens ignores XML control properties."""
+        from check_excel_refs import _scan_zip_for_ref_tokens
+        import zipfile
+
+        # Create a fake Excel file with various XML parts containing #REF!
+        xlsx_path = tmp_path / "test_filtering.xlsx"
+        with zipfile.ZipFile(xlsx_path, "w") as zf:
+            # Control properties - should be ignored
+            zf.writestr("xl/ctrlProps/ctrlProp1.xml", 
+                       '<?xml version="1.0" encoding="UTF-8"?><root>#REF!</root>')
+            zf.writestr("xl/ctrlProps/ctrlProp77.xml", 
+                       '<?xml version="1.0" encoding="UTF-8"?><ctrl>#REF!</ctrl>')
+            
+            # Metadata - should be ignored
+            zf.writestr("xl/metadata.xml", 
+                       '<?xml version="1.0" encoding="UTF-8"?><metadata>#REF!</metadata>')
+            
+            # Person metadata - should be ignored  
+            zf.writestr("xl/persons/person.xml", 
+                       '<?xml version="1.0" encoding="UTF-8"?><person>#REF!</person>')
+            
+            # Threaded comments - should be ignored
+            zf.writestr("xl/threadedComments/threadedComment1.xml", 
+                       '<?xml version="1.0" encoding="UTF-8"?><comment>#REF!</comment>')
+            
+            # Workbook - should be reported (legitimate XML error)
+            zf.writestr("xl/workbook.xml", 
+                       '<?xml version="1.0" encoding="UTF-8"?><workbook>#REF!</workbook>')
+            
+            # Charts - should be reported (could be user-facing)
+            zf.writestr("xl/charts/chart1.xml", 
+                       '<?xml version="1.0" encoding="UTF-8"?><chart>#REF!</chart>')
+
+        results = _scan_zip_for_ref_tokens(xlsx_path)
+        
+        # Should only find the workbook and chart XML, not the filtered ones
+        reported_files = {result["cell"] for result in results}
+        
+        # These should be reported
+        assert "xl/workbook.xml" in reported_files
+        assert "xl/charts/chart1.xml" in reported_files
+        
+        # These should be filtered out (ignored)
+        assert "xl/ctrlProps/ctrlProp1.xml" not in reported_files
+        assert "xl/ctrlProps/ctrlProp77.xml" not in reported_files
+        assert "xl/metadata.xml" not in reported_files
+        assert "xl/persons/person.xml" not in reported_files
+        assert "xl/threadedComments/threadedComment1.xml" not in reported_files
+        
+        # Should have exactly 2 results (workbook and chart)
+        assert len(results) == 2
+
     def test_check_ref_errors_with_simple_ref_error(self, tmp_path):
         """Test detecting a simple #REF! error in a cell value."""
         wb = openpyxl.Workbook()
