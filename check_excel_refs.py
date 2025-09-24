@@ -4,7 +4,9 @@ Check for #REF! errors in Excel files and export sheets with formulas.
 """
 import csv
 import os
+import re
 import sys
+import zipfile
 from pathlib import Path
 from typing import Any, Dict, List
 
@@ -112,6 +114,39 @@ def _scan_data_validations_for_ref(ws: Worksheet) -> List[Dict[str, str]]:
     except Exception:
         pass
     return errors
+
+
+def _scan_zip_for_ref_tokens(xlsx_path: Path) -> List[Dict[str, str]]:
+    """
+    Scan the underlying XLSX/XLSM/XLTM zip parts for literal '#REF!' tokens.
+    This catches references present in XML (charts, conditional formatting,
+    defined names, etc.) that may not surface via openpyxl objects.
+    Returns a list of dicts with keys: sheet ('<xml>'), cell (zip member name), formula.
+    """
+    findings: List[Dict[str, str]] = []
+    try:
+        with zipfile.ZipFile(xlsx_path, "r") as zf:
+            for name in zf.namelist():
+                # Only inspect Excel XML parts
+                if not name.startswith("xl/") or not name.endswith(".xml"):
+                    continue
+                try:
+                    data = zf.read(name)
+                except Exception:
+                    continue
+                if b"#REF!" in data:
+                    findings.append(
+                        {
+                            "sheet": "<xml>",
+                            "cell": name,
+                            "formula": "#REF! found in XML part",
+                        }
+                    )
+    except Exception:
+        # If the file isn't a zip (like xlsb) or read error, ignore; other
+        # checks will handle detection.
+        pass
+    return findings
 
 
 def check_ref_errors(file_path: Path):
@@ -244,8 +279,47 @@ def main():
     # Check for #REF! errors
     ref_errors = check_ref_errors(file_path)
 
+    # Soft warnings: scan raw XML parts for literal '#REF!' without failing the run
+    xml_hits: List[Dict[str, str]] = _scan_zip_for_ref_tokens(file_path)
+    xml_warnings: List[Dict[str, str]] = []
+    if xml_hits:
+        # Build a set of worksheet titles that already have errors to avoid duplicate noise
+        errored_sheets = {e.get("sheet") for e in (ref_errors or [])}
+        sheet_re = re.compile(r"(?:^|/)worksheets/sheet(\d+)\.xml$")
+        try:
+            # Load workbook briefly to map sheet index -> title for deduping
+            wb_for_map = openpyxl.load_workbook(
+                file_path, data_only=False, keep_links=False
+            )
+            for hit in xml_hits:
+                part = hit.get("cell", "")
+                m = sheet_re.search(part)
+                if m:
+                    try:
+                        idx = int(m.group(1)) - 1
+                        if 0 <= idx < len(wb_for_map.worksheets):
+                            title = wb_for_map.worksheets[idx].title
+                            if title in errored_sheets:
+                                continue  # skip duplicate for a sheet that already has errors
+                    except Exception:
+                        pass
+                xml_warnings.append(hit)
+            wb_for_map.close()
+        except Exception:
+            # If anything goes wrong during mapping, just surface raw warnings
+            xml_warnings = xml_hits
+
     if debug:
         print(f"Debug: Found {len(ref_errors) if ref_errors else 0} errors")
+        print(f"Debug: Found {len(xml_warnings)} XML warnings")
+
+    # Print soft warnings (do not affect exit code)
+    if xml_warnings:
+        print(
+            f"WARNING: Found {len(xml_warnings)} potential '#REF!' tokens in XML parts:"
+        )
+        for w in xml_warnings[:50]:  # cap output to avoid log spam
+            print(f"  - XML part: {w.get('cell')}: {w.get('formula')}")
 
     if ref_errors is None:
         sys.exit(1)
