@@ -60,7 +60,6 @@ If anything above is unclear (e.g., additional env vars a downstream repo expect
 
 These repos call the reusable workflows in this repo via `workflow_call` to validate Excel changes on PRs and to upload/release on merge.
 
-- Pre-merge validation (in a caller repo like `xl-test` or `xlTemplate`):
 
   ```yaml
   name: Pre-Check Excel
@@ -86,6 +85,59 @@ These repos call the reusable workflows in this repo via `workflow_call` to vali
   - The reusable workflow detects changed `*.xl*` files, ensures only one Excel file is present, and outputs `EXCEL_FILE`.
   - `.env` in the caller repo should provide: `SOP_ID`, `DOC_ID`, `DOC_TITLE`, `DOC_DETAILS` (and optionally anything else you want in Qualer details).
   - If no Excel files are changed, the job exits cleanly and sets `SKIP_UPLOAD=true` for downstream jobs.
+
+#### xl-test variations from the generic examples
+
+`xl-test` intentionally differs  from the generic examples above:
+
+- Uses the `dev` ref of this repo for reusable workflows while iterating:
+  - `uses: Johnson-Gage-Inspection-Inc/ci-scripts/.github/workflows/<workflow>.yml@dev`
+
+PR-trigger (pre-merge checks):
+
+```yaml
+name: Pre-Merge Checks
+on:
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  validate:
+    uses: Johnson-Gage-Inspection-Inc/ci-scripts/.github/workflows/pre-check.yml@dev
+    with:
+      repo_name: Johnson-Gage-Inspection-Inc/xl-test  # or use ${{ github.repository }}
+    secrets:
+      QUALER_EMAIL: ${{ secrets.QUALER_EMAIL }}
+      QUALER_PASSWORD: ${{ secrets.QUALER_PASSWORD }}
+      SHAREPOINT_CLIENT_ID: ${{ secrets.SHAREPOINT_CLIENT_ID }}
+      SHAREPOINT_CLIENT_SECRET: ${{ secrets.SHAREPOINT_CLIENT_SECRET }}
+      SHAREPOINT_TENANT_ID: ${{ secrets.SHAREPOINT_TENANT_ID }}
+```
+
+MR-trigger (upload + release when PR is merged):
+
+```yaml
+name: Upload & Release on Merge
+on:
+  pull_request:
+    branches: [ main ]
+    types: [ closed ]
+
+jobs:
+  MR-workflow:
+    if: github.event.pull_request.merged == true
+    uses: Johnson-Gage-Inspection-Inc/ci-scripts/.github/workflows/upload-release.yml@dev
+    with:
+      repo_name: Johnson-Gage-Inspection-Inc/xl-test  # or use ${{ github.repository }}
+    secrets:
+      QUALER_EMAIL: ${{ secrets.QUALER_EMAIL }}
+      QUALER_PASSWORD: ${{ secrets.QUALER_PASSWORD }}
+      SHAREPOINT_CLIENT_ID: ${{ secrets.SHAREPOINT_CLIENT_ID }}
+      SHAREPOINT_CLIENT_SECRET: ${{ secrets.SHAREPOINT_CLIENT_SECRET }}
+      SHAREPOINT_TENANT_ID: ${{ secrets.SHAREPOINT_TENANT_ID }}
+```
+
+Tip: To lock in stable behavior, merge `ci-scripts`' `dev` into `main` (callers don’t need to change refs). Only pin `@main` in callers if you explicitly want them tied to the stable line.
 
 - Upload + Release on merge (in the caller repo after merging to `main`):
 
