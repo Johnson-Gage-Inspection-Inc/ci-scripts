@@ -96,6 +96,7 @@ class XLTestIntegration:
         """Create a valid Excel file with proper structure."""
         wb = Workbook()
         ws = wb.active
+        assert ws is not None, "Failed to create active worksheet in Excel file"
         ws.title = "Sheet1"
 
         # Add some valid data
@@ -122,6 +123,7 @@ class XLTestIntegration:
         """Create an Excel file with #REF! errors."""
         wb = Workbook()
         ws = wb.active
+        assert ws is not None, "Failed to create active worksheet in Excel file"
         ws.title = "Sheet1"
 
         # Add some data
