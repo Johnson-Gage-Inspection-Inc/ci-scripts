@@ -302,7 +302,7 @@ def main():
                             title = wb_for_map.worksheets[idx].title
                             if title in errored_sheets:
                                 continue  # skip duplicate for a sheet that already has errors
-                    except Exception:
+                    except (ValueError, IndexError):
                         pass
                 xml_warnings.append(hit)
             wb_for_map.close()
