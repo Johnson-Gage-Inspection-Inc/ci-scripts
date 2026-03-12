@@ -133,7 +133,7 @@ def _scan_zip_for_ref_tokens(xlsx_path: Path) -> List[Dict[str, str]]:
                     continue
                 try:
                     data = zf.read(name)
-                except Exception:
+                except (KeyError, UnicodeDecodeError):
                     continue
                 if b"#REF!" in data:
                     findings.append(
@@ -143,7 +143,7 @@ def _scan_zip_for_ref_tokens(xlsx_path: Path) -> List[Dict[str, str]]:
                             "formula": "#REF! found in XML part",
                         }
                     )
-    except Exception:
+    except (zipfile.BadZipFile, FileNotFoundError, OSError):
         # If the file isn't a zip (like xlsb) or read error, ignore; other
         # checks will handle detection.
         pass
@@ -306,7 +306,7 @@ def main():
                         pass
                 xml_warnings.append(hit)
             wb_for_map.close()
-        except Exception:
+        except (InvalidFileException, IndexError, KeyError, AttributeError, ValueError):
             # If anything goes wrong during mapping, just surface raw warnings
             xml_warnings = xml_hits
 
