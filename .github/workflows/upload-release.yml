@@ -32,7 +32,7 @@ jobs:
       RELEASE_TAG: ${{ steps.release-tag.outputs.RELEASE_TAG }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Extract Git Commit Info
         id: commit-hash
@@ -80,7 +80,7 @@ jobs:
       RELEASE_TAG: ${{ needs.re-validate.outputs.RELEASE_TAG }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Set clock to central time (Windows)
         run: |
@@ -89,7 +89,7 @@ jobs:
 
 
       - name: Checkout CI Scripts Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           repository: Johnson-Gage-Inspection-Inc/ci-scripts
           path: ci-scripts
@@ -128,7 +128,7 @@ jobs:
           echo "EXCEL_FILE=${{ env.EXCEL_FILE }}" | Out-File -Append -FilePath $env:GITHUB_OUTPUT
 
       - name: Upload Modified Excel File
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: updated-excel
           path: ${{ steps.modify.outputs.EXCEL_FILE }}
@@ -139,10 +139,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Overwrite with Updated Excel File
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: updated-excel
 
@@ -218,10 +218,10 @@ jobs:
         run: sudo timedatectl set-timezone America/Chicago
 
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Overwrite with Updated Excel File
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: updated-excel
 
@@ -243,7 +243,7 @@ jobs:
           echo "RENAMED_FILE=$RENAMED_FILE" >> "$GITHUB_OUTPUT"
 
       - name: Upload Renamed Excel File
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: renamed-excel
           path: ${{ steps.rename.outputs.RENAMED_FILE }}
@@ -254,10 +254,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Checkout `ci-scripts` Repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v6
         with:
           repository: Johnson-Gage-Inspection-Inc/ci-scripts
           path: ci-scripts
@@ -267,7 +267,7 @@ jobs:
         run: chmod +x ./ci-scripts/upload_sop.sh
 
       - name: Download Renamed Excel File
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: renamed-excel
 
@@ -286,10 +286,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Download Renamed Excel File
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: renamed-excel
           path: .
@@ -342,7 +342,7 @@ jobs:
           } >> "$GITHUB_OUTPUT"
 
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ needs.re-validate.outputs.RELEASE_TAG }}
           generate_release_notes: true
