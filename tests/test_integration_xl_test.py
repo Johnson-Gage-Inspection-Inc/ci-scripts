@@ -45,6 +45,19 @@ class XLTestIntegration:
                 "GITHUB_TOKEN environment variable is required for integration tests"
             )
 
+        # quick sanity call to ensure token is valid; skip if unauthorized
+        try:
+            # simple repo GET will 401 if token is bad
+            url = f"{self.api_base}/repos/{self.repo_owner}/{self.repo_name}"
+            resp = requests.get(url, headers=self.headers)
+            if resp.status_code == 401:
+                raise GitHubIntegrationError("GitHub token is unauthorized or expired")
+            resp.raise_for_status()
+        except requests.exceptions.HTTPError:
+            if resp.status_code == 401:
+                raise GitHubIntegrationError("GitHub token is unauthorized or expired")
+            raise
+
     @property
     def headers(self) -> Dict[str, str]:
         """HTTP headers for GitHub API requests."""
@@ -83,6 +96,7 @@ class XLTestIntegration:
         """Create a valid Excel file with proper structure."""
         wb = Workbook()
         ws = wb.active
+        assert ws is not None, "Failed to create active worksheet in Excel file"
         ws.title = "Sheet1"
 
         # Add some valid data
@@ -109,6 +123,7 @@ class XLTestIntegration:
         """Create an Excel file with #REF! errors."""
         wb = Workbook()
         ws = wb.active
+        assert ws is not None, "Failed to create active worksheet in Excel file"
         ws.title = "Sheet1"
 
         # Add some data
@@ -304,7 +319,10 @@ class TestXLIntegration:
 
     def setup_method(self):
         """Set up test instance."""
-        self.xl_test = XLTestIntegration()
+        try:
+            self.xl_test = XLTestIntegration()
+        except GitHubIntegrationError as e:
+            pytest.skip(f"Skipping integration tests: {e}")
         self.test_branches: List[str] = []
         self.test_prs: List[int] = []
 
@@ -414,6 +432,11 @@ class TestXLIntegration:
 
             print("🎉 Parallel creation + sequential handling completed successfully!")
 
+        except requests.exceptions.HTTPError as e:
+            # If we received a 401 from GitHub, skip rather than fail
+            if e.response is not None and e.response.status_code == 401:
+                pytest.skip("GitHub token unauthorized/expired during test")
+            pytest.fail(f"End-to-end workflow test failed: {e}")
         except Exception as e:
             pytest.fail(f"End-to-end workflow test failed: {e}")
 
