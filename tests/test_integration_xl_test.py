@@ -433,9 +433,13 @@ class TestXLIntegration:
             print("🎉 Parallel creation + sequential handling completed successfully!")
 
         except requests.exceptions.HTTPError as e:
-            # If we received a 401 from GitHub, skip rather than fail
-            if e.response is not None and e.response.status_code == 401:
-                pytest.skip("GitHub token unauthorized/expired during test")
+            # Skip rather than fail when the token lacks write access (e.g. Dependabot PRs
+            # run with a restricted token that cannot write to xl-test).
+            if e.response is not None and e.response.status_code in (401, 403):
+                pytest.skip(
+                    f"GitHub token insufficient permissions ({e.response.status_code}) — "
+                    "skipping integration test (expected for Dependabot/read-only tokens)"
+                )
             pytest.fail(f"End-to-end workflow test failed: {e}")
         except Exception as e:
             pytest.fail(f"End-to-end workflow test failed: {e}")
