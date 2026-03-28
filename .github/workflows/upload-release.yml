@@ -87,7 +87,6 @@ jobs:
           tzutil /s "Central Standard Time"
         shell: pwsh
 
-
       - name: Checkout CI Scripts Repository
         uses: actions/checkout@v6
         with:
@@ -123,7 +122,7 @@ jobs:
             echo "ERROR: RELEASE_TAG is empty!"; exit 1
           }
           python ci-scripts/update_excel_metadata.py
-          
+
           # Set the output variable for the Excel file path
           echo "EXCEL_FILE=${{ env.EXCEL_FILE }}" | Out-File -Append -FilePath $env:GITHUB_OUTPUT
 
@@ -174,7 +173,7 @@ jobs:
           FILE_PATH="${{ needs.re-validate.outputs.EXCEL_FILE }}"
           FILE_NAME=$(basename "$FILE_PATH" | sed 's/ /%20/g')
           echo "FILE_NAME=$FILE_NAME" # Debugging step
-          
+
           # Determine content type based on file extension
           FILE_EXT="${FILE_PATH##*.}"
           case "$FILE_EXT" in
@@ -190,7 +189,7 @@ jobs:
               ;;
           esac
           echo "Content-Type: $CONTENT_TYPE" # Debugging step
-          
+
           DRIVE_ID="b!62zY21rTlkyTbN2E9veLub0A9-qfsQ1LmVs-siAwkjUpikiIFZhHTb5VFJuc7Xng"
           UPLOAD_URL="https://graph.microsoft.com/v1.0/drives/$DRIVE_ID/root:/$FILE_NAME:/content"
 
@@ -342,11 +341,15 @@ jobs:
           } >> "$GITHUB_OUTPUT"
 
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ needs.re-validate.outputs.RELEASE_TAG }}
-          generate_release_notes: true
-          body: ${{ steps.release_body.outputs.RELEASE_BODY }}
-          files: "${{ needs.rename-file.outputs.RENAMED_FILE }}"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ needs.re-validate.outputs.RELEASE_TAG }}
+          RELEASE_BODY: ${{ steps.release_body.outputs.RELEASE_BODY }}
+          RENAMED_FILE: ${{ needs.rename-file.outputs.RENAMED_FILE }}
+        run: |
+          echo "$RELEASE_BODY" > /tmp/release_notes.md
+          gh release create "$RELEASE_TAG" \
+            "$RENAMED_FILE" \
+            --title "$RELEASE_TAG" \
+            --generate-notes \
+            --notes-file /tmp/release_notes.md
